@@ -252,7 +252,7 @@ export const WEAPON_STATS: Record<
   tubo: { label: 'TUBO', damage: 14, uses: 12, reachBonus: 14, color: '#94A3B8' },
   bate: { label: 'BATE', damage: 16, uses: 10, reachBonus: 18, color: '#D97706' },
   botella: { label: 'BOTELLA', damage: 8, uses: 3, reachBonus: 8, color: '#7CFF4F' },
-  cadena: { label: 'CADENA', damage: 12, uses: 14, reachBonus: 32, color: '#CBD5E1' },
+  fierro: { label: 'FIERRO', damage: 12, uses: 12, reachBonus: 20, color: '#A16207' },
 };
 
 export const ITEM_STATS: Record<
@@ -558,7 +558,7 @@ export const LEVELS: LevelDef[] = [
       { x: 5400, y: 448, kind: 'cajon', guaranteedDrop: 'energia' },
       { x: 6600, y: 486, kind: 'carrito' },
       { x: 8100, y: 460, kind: 'cajon', guaranteedDrop: 'sandwich' },
-      { x: 8800, y: 474, kind: 'tacho', guaranteedDrop: 'cadena' },
+      { x: 8800, y: 474, kind: 'tacho', guaranteedDrop: 'fierro' },
       { x: 9450, y: 502, kind: 'cajon', guaranteedDrop: 'empanada' },
     ],
   },
@@ -662,7 +662,7 @@ export const LEVELS: LevelDef[] = [
       { x: 1850, y: 452, kind: 'bolsa', guaranteedDrop: 'empanada' },
       { x: 3150, y: 498, kind: 'parlante', guaranteedDrop: 'billete' },
       { x: 4550, y: 458, kind: 'cajon', guaranteedDrop: 'sandwich' },
-      { x: 6050, y: 496, kind: 'tacho', guaranteedDrop: 'cadena' },
+      { x: 6050, y: 496, kind: 'tacho', guaranteedDrop: 'fierro' },
       { x: 7650, y: 446, kind: 'bolsa', guaranteedDrop: '1up' },
       { x: 9250, y: 490, kind: 'cajon', guaranteedDrop: 'energia' },
       { x: 10400, y: 462, kind: 'tacho', guaranteedDrop: 'empanada' },
@@ -888,7 +888,7 @@ export const LEVELS: LevelDef[] = [
       { x: 760, y: 454, kind: 'parlante', guaranteedDrop: 'empanada' },
       { x: 1750, y: 496, kind: 'cajon', guaranteedDrop: 'tubo' },
       { x: 3150, y: 458, kind: 'parlante', guaranteedDrop: 'sandwich' },
-      { x: 4800, y: 490, kind: 'cajon', guaranteedDrop: 'cadena' },
+      { x: 4800, y: 490, kind: 'cajon', guaranteedDrop: 'fierro' },
       { x: 6400, y: 452, kind: 'parlante', guaranteedDrop: 'energia' },
       { x: 8000, y: 496, kind: 'cajon', guaranteedDrop: '1up' },
       { x: 9650, y: 462, kind: 'parlante', guaranteedDrop: 'bate' },

@@ -322,7 +322,7 @@ test('all 6 breakables, 10 pickups, title backdrop/logo, character select assets
     'tubo',
     'bate',
     'botella',
-    'cadena',
+    'fierro',
   ] as const;
   for (const k of pickupKeys) {
     const spec = PICKUP_SPRITE_SPECS[k];
@@ -961,7 +961,6 @@ test('crowd grabHold allows holding away or dodging vertically to break free whi
   });
   assert.equal(verticalRelease.shouldRelease, true);
 });
-
 
 
 

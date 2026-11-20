@@ -682,6 +682,7 @@ export function renderWorld(ctx: CanvasRenderingContext2D, state: RenderWorldSta
             state.timeSec,
             state.debugHitboxes,
             state.frameCanvases,
+            state.worldAssets.heldWeapons,
             state.level.theme,
             state.reduceEffects
           );
@@ -1188,6 +1189,7 @@ function drawPlayer(
   timeSec: number,
   debugHitboxes: boolean,
   frameCanvases?: Partial<Record<CharacterId, HTMLCanvasElement[]>>,
+  heldWeapons?: Partial<Record<WeaponType, ProcessedPixelSprite>>,
   theme: LevelDef['theme'] = 'poblacion',
   reduceEffects = false
 ): void {
@@ -1272,7 +1274,7 @@ function drawPlayer(
   }
 
   if (p.weapon && p.state !== 'knockdown' && p.state !== 'hurt') {
-    drawHeldWeapon(ctx, p.weapon, p.state);
+    drawHeldWeapon(ctx, p.weapon, p.state, heldWeapons?.[p.weapon]);
   }
 
   ctx.restore();
@@ -1333,12 +1335,46 @@ function drawPlayer(
 function drawHeldWeapon(
   ctx: CanvasRenderingContext2D,
   weapon: WeaponType,
-  state: PlayerEntity['state']
+  state: PlayerEntity['state'],
+  sprite?: ProcessedPixelSprite
 ): void {
   const swinging = state === 'attack1' || state === 'attack2' || state === 'attack3';
-  const color = WEAPON_STATS[weapon].color;
+  const anchorX = swinging ? 34 : 18;
+  const anchorY = swinging ? -72 : -62;
   ctx.save();
-  ctx.translate(swinging ? 34 : 18, swinging ? -72 : -62);
+
+  if (sprite) {
+    const scale = sprite.targetHeightPx / Math.max(1, sprite.height);
+    const drawWidth = sprite.width * scale;
+    const drawHeight = sprite.height * scale;
+    const gripRatios: Record<WeaponType, number> = {
+      tubo: 0.2,
+      bate: 0.18,
+      botella: 0.2,
+      fierro: 0.18,
+    };
+    const rotationByWeapon: Record<WeaponType, { idle: number; swing: number }> = {
+      tubo: { idle: -0.08, swing: 0.2 },
+      bate: { idle: -0.62, swing: 0.3 },
+      botella: { idle: -0.78, swing: 0.42 },
+      fierro: { idle: -0.38, swing: 0.24 },
+    };
+    ctx.translate(anchorX, anchorY);
+    ctx.rotate(swinging ? rotationByWeapon[weapon].swing : rotationByWeapon[weapon].idle);
+    // Este pivote corresponde a la mano y no modifica la posición física del jugador.
+    ctx.drawImage(
+      sprite.canvas,
+      -drawWidth * gripRatios[weapon],
+      -drawHeight * 0.5,
+      drawWidth,
+      drawHeight
+    );
+    ctx.restore();
+    return;
+  }
+
+  const color = WEAPON_STATS[weapon].color;
+  ctx.translate(anchorX, anchorY);
   ctx.rotate(swinging ? 0.35 : -0.65);
   ctx.fillStyle = color;
   if (weapon === 'tubo') {
@@ -1351,12 +1387,15 @@ function drawHeldWeapon(
     ctx.fillRect(0, -5, 16, 10);
     ctx.fillRect(16, -2, 10, 4);
   } else {
-    ctx.strokeStyle = '#CBD5E1';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.quadraticCurveTo(22, swinging ? 6 : 16, 46, swinging ? -2 : 12);
-    ctx.stroke();
+    // Fierro: arma rígida y simple, sin física flexible ni segmentos articulados.
+    ctx.fillStyle = '#713F12';
+    ctx.fillRect(0, -4, 42, 8);
+    ctx.fillStyle = '#A16207';
+    ctx.fillRect(3, -2, 34, 4);
+    ctx.fillStyle = '#D6A24A';
+    ctx.fillRect(10, -1, 12, 2);
+    ctx.fillStyle = '#451A03';
+    ctx.fillRect(38, -5, 5, 10);
   }
   ctx.restore();
 }
@@ -2031,7 +2070,7 @@ function drawPickup(
 
   const bob = Math.sin(timeSec * 5 + pk.bobPhase) * 4;
   const isWeapon =
-    pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'cadena';
+    pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'fierro';
   const label = isWeapon
     ? WEAPON_STATS[pk.type as WeaponType].label
     : ITEM_STATS[pk.type as Exclude<PickupEntity['type'], WeaponType>].label;

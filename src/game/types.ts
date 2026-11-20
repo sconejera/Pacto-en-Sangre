@@ -104,7 +104,7 @@ export type EnemyType =
   | 'fan'
   | 'manager';
 
-export type WeaponType = 'tubo' | 'bate' | 'botella' | 'cadena';
+export type WeaponType = 'tubo' | 'bate' | 'botella' | 'fierro';
 
 export type ItemType =
   | 'empanada'

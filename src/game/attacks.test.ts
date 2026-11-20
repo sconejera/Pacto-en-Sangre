@@ -130,7 +130,7 @@ test('CA-06: ATTACK_FRAME_DATA structural integrity, 4 sprite slots per anim, an
   assert.equal(bayronTotal, 10);
 
   // Confirm weapon + kickExtraReach stays compatible with combo3
-  const maxExtra = CHARACTERS.crismj.kickExtraReach + WEAPON_STATS.cadena.reachBonus;
+  const maxExtra = CHARACTERS.crismj.kickExtraReach + WEAPON_STATS.fierro.reachBonus;
   const box = { x: 0, z: 0, w: 0, h: 0 };
   buildAttackHitboxInto(box, 100, 0, 1, ATTACK_FRAME_DATA.crismj.combo3, maxExtra);
   assert.ok(Math.abs(box.x + box.w * 0.5 - (100 + 1.05 * (54 + maxExtra))) <= 2);

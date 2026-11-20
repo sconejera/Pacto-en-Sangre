@@ -136,6 +136,7 @@ export class NoFirmoEngine {
     boss5Frames: [],
     breakables: {},
     pickups: {},
+    heldWeapons: {},
     backgrounds: {},
     backgroundsAlt: {},
     bonusCourtBg: null,
@@ -347,6 +348,7 @@ export class NoFirmoEngine {
             frame: number | null;
           }[];
           spawnTestBreakable: (dx: number) => number | null;
+          equipTestWeapon: (weapon: WeaponType) => boolean;
         };
       };
       win.__NF_DEBUG__ = {
@@ -370,6 +372,13 @@ export class NoFirmoEngine {
             broken: false,
           });
           return id;
+        },
+        equipTestWeapon: (weapon: WeaponType) => {
+          const p = this.players[0];
+          if (!p || !WEAPON_STATS[weapon]) return false;
+          p.weapon = weapon;
+          p.weaponUses = WEAPON_STATS[weapon].uses;
+          return true;
         },
       };
     }
@@ -1613,28 +1622,30 @@ export class NoFirmoEngine {
     // Pick up nearby weapon/item with A, or start attack
     if (bufferedAttack) {
       this.attackBufferTimer = 0;
-      if (this.tryPickupWeaponOnGround(p)) {
+      const pickedUpWeapon = this.tryPickupWeaponOnGround(p);
+      if (!pickedUpWeapon) {
+        if (isRunning) {
+          p.state = 'shoulder';
+          p.stateTimer = 0.4;
+          p.animTime = 0;
+          p.vx = p.facing * (stats.runSpeedX * 1.25);
+          p.vy = 0;
+          p.attackId++;
+          p.attackHitSet.clear();
+          this.spawnDustBurst(p.x - p.facing * 12, p.y, 4);
+          return;
+        }
+        const nextStep: 1 | 2 | 3 =
+          p.comboWindowTimer > 0 && p.comboStep === 1
+            ? 2
+            : p.comboWindowTimer > 0 && p.comboStep === 2
+            ? 3
+            : 1;
+        this.startComboAttack(p, nextStep);
         return;
       }
-      if (isRunning) {
-        p.state = 'shoulder';
-        p.stateTimer = 0.4;
-        p.animTime = 0;
-        p.vx = p.facing * (stats.runSpeedX * 1.25);
-        p.vy = 0;
-        p.attackId++;
-        p.attackHitSet.clear();
-        this.spawnDustBurst(p.x - p.facing * 12, p.y, 4);
-        return;
-      }
-      const nextStep: 1 | 2 | 3 =
-        p.comboWindowTimer > 0 && p.comboStep === 1
-          ? 2
-          : p.comboWindowTimer > 0 && p.comboStep === 2
-          ? 3
-          : 1;
-      this.startComboAttack(p, nextStep);
-      return;
+      // La recogida consume el ataque, pero no interrumpe la integración de
+      // velocidad de este frame: así el personaje no da un tirón al tomarla.
     }
 
     // Jump with B
@@ -3030,7 +3041,7 @@ export class NoFirmoEngine {
         }
       }
       const isWeapon =
-        pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'cadena';
+        pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'fierro';
       // Food & points auto-collect on overlap; weapons require Attack near weapon
       if (
         !isWeapon &&
@@ -3047,7 +3058,7 @@ export class NoFirmoEngine {
     for (const pk of this.pickups) {
       if (pk.collected) continue;
       const isWeapon =
-        pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'cadena';
+        pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'fierro';
       if (isWeapon && Math.abs(pk.x - p.x) < 48 && Math.abs(pk.y - p.y) < 26) {
         const w = pk.type as WeaponType;
         p.weapon = w;
