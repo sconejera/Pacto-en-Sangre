@@ -1,0 +1,8 @@
+{
+  "name": "PACTO EN SANGRE — Beat \u0027Em Up 2D de Calle",
+  "description": "El malvado devil gonzalez, intenta someter a los cantantes chilenos a firmar el contrato, con el fin de obtener su alma y el permiso para convertirlos en androides sin mente y hacer contenido barato basado en sexo y morbo.\n\nPodran nuestros heroes, hacer frente al malvado junto a su ejercito de androides.\n\nPon a prueba tu destreza y lucha contra los malvados devil gonzalez, el JC que le dicen, ivanmartinez el hombre de cera, Carlitos Run la guagua, El tronco el licenciado maximo del codo; y asu vez, derrota a las hordas de Papis mickys, tios renes y troncos bizarros. \n\nLA BATALLA COMIENZA!!!",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

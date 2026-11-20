@@ -1,0 +1,242 @@
+@import "tailwindcss";
+
+@layer base {
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #0B0F1E;
+    color: #ffffff;
+    font-family: 'Silkscreen', 'Press Start 2P', ui-monospace, monospace;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+}
+
+.font-arcade {
+  font-family: 'Silkscreen', 'Press Start 2P', ui-monospace, monospace;
+  letter-spacing: 0.04em;
+}
+
+.arcade-outline {
+  text-shadow:
+    -2px -2px 0 #05070D,
+     2px -2px 0 #05070D,
+    -2px  2px 0 #05070D,
+     2px  2px 0 #05070D,
+     0px -2px 0 #05070D,
+     0px  2px 0 #05070D,
+    -2px  0px 0 #05070D,
+     2px  0px 0 #05070D,
+     0px  3px 0 #05070D;
+}
+
+.arcade-outline-sm {
+  text-shadow:
+    -1px -1px 0 #05070D,
+     1px -1px 0 #05070D,
+    -1px  1px 0 #05070D,
+     1px  1px 0 #05070D,
+     0px  2px 0 #05070D;
+}
+
+.arcade-selected-bar {
+  background: linear-gradient(180deg, #0E0B14 0%, #05060A 100%);
+  border: 2px solid #F59E0B;
+  box-shadow:
+    inset 0 0 0 2px #92400E,
+    0 0 0 2px #05070D,
+    0 4px 12px rgba(245, 158, 11, 0.28);
+  color: #FFD23F;
+  text-shadow:
+    -2px -2px 0 #05070D,
+     2px -2px 0 #05070D,
+    -2px  2px 0 #05070D,
+     2px  2px 0 #05070D,
+     0px  2px 0 #05070D;
+}
+
+.arcade-menu-link {
+  color: #E83BFF;
+  text-shadow:
+    -2px -2px 0 #05070D,
+     2px -2px 0 #05070D,
+    -2px  2px 0 #05070D,
+     2px  2px 0 #05070D,
+     0px -2px 0 #05070D,
+     0px  2px 0 #05070D,
+    -2px  0px 0 #05070D,
+     2px  0px 0 #05070D,
+     0px  3px 0 #05070D;
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+
+.arcade-menu-link:hover {
+  color: #FF6BFF;
+  transform: scale(1.04);
+}
+
+.arcade-panel {
+  background-color: rgba(8, 7, 16, 0.94);
+  border: 2px solid #F59E0B;
+  box-shadow:
+    inset 0 0 0 2px #78350F,
+    0 0 0 2px #05070D;
+}
+
+.pixel-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+@keyframes arcadeHeroFloat {
+  0%,
+  100% {
+    transform: translateY(0px) scale(1.08);
+  }
+  50% {
+    transform: translateY(-7px) scale(1.1);
+  }
+}
+
+.arcade-hero-float {
+  animation: arcadeHeroFloat 1.8s ease-in-out infinite;
+}
+
+@keyframes arcadeDangerPulse {
+  0%,
+  100% {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(1.02);
+  }
+}
+
+.arcade-danger-alert {
+  border: 2px solid #EF4444;
+  background-color: rgba(127, 29, 29, 0.92);
+  box-shadow:
+    inset 0 0 0 2px #05070D,
+    0 0 18px rgba(239, 68, 68, 0.65);
+  animation: arcadeDangerPulse 0.42s steps(2, end) infinite;
+}
+
+.arcade-red-outline {
+  text-shadow:
+    -2px -2px 0 #DC2626,
+     2px -2px 0 #DC2626,
+    -2px  2px 0 #DC2626,
+     2px  2px 0 #DC2626,
+     0px -2px 0 #DC2626,
+     0px  2px 0 #DC2626,
+    -2px  0px 0 #DC2626,
+     2px  0px 0 #DC2626,
+    -3px  0px 0 #7F1D1D,
+     3px  0px 0 #7F1D1D,
+     0px  3px 0 #7F1D1D,
+     0px -3px 0 #7F1D1D,
+     0px  4px 0 #05070D;
+}
+
+@keyframes arcadeMarqueeScroll {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.arcade-marquee-track {
+  display: flex;
+  width: max-content;
+  will-change: transform;
+  animation: arcadeMarqueeScroll 90s linear infinite;
+}
+
+.arcade-footer-ribbon {
+  background: #FFFFFF;
+  background-color: #FFFFFF;
+  border-top: 2px solid #D1D5DB;
+  box-shadow: none;
+}
+
+.arcade-ribbon-text {
+  font-family: 'Bungee', 'Silkscreen', sans-serif;
+  font-weight: 400;
+  color: #000000;
+  text-shadow: none;
+  -webkit-text-stroke: 0;
+}
+
+.arcade-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 10px;
+  background: #1A0B2E;
+  border: 2px solid #F59E0B;
+  cursor: pointer;
+}
+
+.arcade-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #FFD23F;
+  border: 2px solid #05070D;
+  cursor: pointer;
+}
+
+.arcade-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #FFD23F;
+  border: 2px solid #05070D;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+@keyframes arcadeTitleOverlordBreathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -4px, 0) scale(1.018);
+  }
+}
+
+@keyframes arcadeTitleHeroBreathe {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -3px, 0);
+  }
+}
+
+.arcade-title-overlord-breathe {
+  animation: arcadeTitleOverlordBreathe 4.2s ease-in-out infinite;
+}
+
+.arcade-title-hero-breathe {
+  animation: arcadeTitleHeroBreathe 3.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arcade-title-overlord-breathe,
+  .arcade-title-hero-breathe,
+  .arcade-hero-float {
+    animation: none !important;
+  }
+}
+
+
