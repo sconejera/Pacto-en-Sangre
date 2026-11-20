@@ -23,6 +23,17 @@ export type SpriteAnimName =
   | 'guard'
   | 'victory';
 
+export type AttackSlot = 'combo1' | 'combo2' | 'combo3' | 'airKick';
+
+export interface AttackFrameData {
+  startupTicks: number;
+  activeTicks: number;
+  recoveryTicks: number;
+  hitStartX: number;
+  hitEndX: number;
+  hitHeight: number;
+}
+
 export interface SpriteFrameBox {
   x: number;
   y: number;
@@ -236,6 +247,7 @@ export interface PlayerEntity {
   comboStep: 0 | 1 | 2 | 3;
   comboWindowTimer: number;
   attackId: number;
+  attackTick: number;
   attackHitSet: Set<number>;
   weapon: WeaponType | null;
   weaponUses: number;

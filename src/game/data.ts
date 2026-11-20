@@ -1,4 +1,6 @@
 import type {
+  AttackFrameData,
+  AttackSlot,
   BossDef,
   CharacterId,
   CharacterStats,
@@ -107,6 +109,30 @@ export const CHARACTERS: Record<CharacterId, CharacterStats> = {
     shoulderRecovery: 0, // Sin recuperación
     bars: { velocidad: 5, fuerza: 3, alcance: 5, agilidad: 5 },
     endingLine: 'Se acabó el circo de Devil Gonzalez: el bloque entero suena libre.',
+  },
+};
+
+const COMBO_BOX = { hitStartX: 12, hitEndX: 57, hitHeight: 96 } as const;
+const AIR_BOX = { hitStartX: 12, hitEndX: 59, hitHeight: 96 } as const;
+
+export const ATTACK_FRAME_DATA: Record<CharacterId, Record<AttackSlot, AttackFrameData>> = {
+  bayron: {
+    combo1: { startupTicks: 3, activeTicks: 3, recoveryTicks: 4, ...COMBO_BOX },
+    combo2: { startupTicks: 3, activeTicks: 3, recoveryTicks: 4, ...COMBO_BOX },
+    combo3: { startupTicks: 4, activeTicks: 3, recoveryTicks: 5, ...COMBO_BOX },
+    airKick: { startupTicks: 3, activeTicks: 18, recoveryTicks: 0, ...AIR_BOX },
+  },
+  marcianeke: {
+    combo1: { startupTicks: 2, activeTicks: 3, recoveryTicks: 4, ...COMBO_BOX },
+    combo2: { startupTicks: 2, activeTicks: 3, recoveryTicks: 4, ...COMBO_BOX },
+    combo3: { startupTicks: 4, activeTicks: 3, recoveryTicks: 5, ...COMBO_BOX },
+    airKick: { startupTicks: 3, activeTicks: 18, recoveryTicks: 0, ...AIR_BOX },
+  },
+  crismj: {
+    combo1: { startupTicks: 2, activeTicks: 2, recoveryTicks: 4, ...COMBO_BOX },
+    combo2: { startupTicks: 2, activeTicks: 2, recoveryTicks: 4, ...COMBO_BOX },
+    combo3: { startupTicks: 3, activeTicks: 3, recoveryTicks: 5, ...COMBO_BOX },
+    airKick: { startupTicks: 3, activeTicks: 18, recoveryTicks: 0, ...AIR_BOX },
   },
 };
 

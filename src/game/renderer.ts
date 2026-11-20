@@ -1,4 +1,5 @@
 import {
+  ATTACK_FRAME_DATA,
   CHARACTERS,
   ITEM_STATS,
   LOGICAL_HEIGHT,
@@ -8,8 +9,11 @@ import {
   WEAPON_STATS,
 } from './data';
 import {
+  buildAttackHitboxInto,
   computeDirectionalShadowInto,
   computeJumpFrameIndex,
+  getAttackFrameSlot,
+  getAttackPhase,
   getBoss1FrameIndex,
   getBoss2FrameIndex,
   getBoss3FrameIndex,
@@ -20,6 +24,7 @@ import {
 } from './rules';
 import { getAnimationFrameIndex, SPRITE_MAP } from './sprites';
 import type {
+  AttackSlot,
   BossEntity,
   BreakableEntity,
   CharacterId,
@@ -74,6 +79,7 @@ export interface RenderWorldState {
 }
 
 const MAX_RENDER_ENTITIES = 192;
+const debugAtkBoxScratch = { x: 0, z: 0, w: 0, h: 0 };
 
 const SHADOW_WIDTH_BY_KIND = {
   player: 44,
@@ -1194,10 +1200,33 @@ function drawPlayer(
   const sheet = sprites[p.charId];
   const map = SPRITE_MAP[p.charId];
   const animName = getPlayerSpriteAnim(p);
-  const frameIdx =
-    p.state === 'jump'
-      ? computeJumpFrameIndex(p.z, p.vz)
-      : getAnimationFrameIndex(p.charId, animName, p.animTime);
+  const atkSlot: AttackSlot | null =
+    p.state === 'attack1'
+      ? 'combo1'
+      : p.state === 'attack2'
+      ? 'combo2'
+      : p.state === 'attack3'
+      ? 'combo3'
+      : p.state === 'airKick'
+      ? 'airKick'
+      : null;
+  let frameIdx: number;
+  if (p.state === 'grabbedByEnemy') {
+    frameIdx = SPRITE_MAP[p.charId].animations.hurt.frames[0]; // pose de daño fija durante el agarre
+  } else if (p.state === 'jump') {
+    frameIdx = computeJumpFrameIndex(p.z, p.vz);
+  } else if (atkSlot !== null) {
+    const atkData = ATTACK_FRAME_DATA[p.charId][atkSlot];
+    const slot = getAttackFrameSlot(p.attackTick, atkData);
+    const animFrames = map.animations[animName].frames;
+    frameIdx = animFrames[Math.min(slot, animFrames.length - 1)] ?? 0;
+  } else {
+    frameIdx = getAnimationFrameIndex(p.charId, animName, p.animTime);
+  }
+  if (import.meta.env.MODE !== 'production' && typeof window !== 'undefined') {
+    (window as unknown as { __NF_DEBUG_PLAYER_FRAME__?: number }).__NF_DEBUG_PLAYER_FRAME__ =
+      frameIdx;
+  }
   const frame = map.frames[frameIdx] || map.frames[0];
   const preSliced = frameCanvases?.[p.charId]?.[frameIdx];
 
@@ -1275,15 +1304,27 @@ function drawPlayer(
     ctx.strokeStyle = '#19E3FF';
     ctx.lineWidth = 2;
     ctx.strokeRect(sx - 22, sy - iz - 110, 44, 110);
-    if (
-      p.state === 'attack1' ||
-      p.state === 'attack2' ||
-      p.state === 'attack3' ||
-      p.state === 'airKick' ||
-      p.state === 'shoulder'
-    ) {
+    if (p.state === 'shoulder') {
       ctx.strokeStyle = '#FF2E88';
       ctx.strokeRect(sx + (p.facing > 0 ? 10 : -72), sy - iz - 90, 62, 60);
+    } else if (atkSlot !== null) {
+      const atkData = ATTACK_FRAME_DATA[p.charId][atkSlot];
+      if (getAttackPhase(p.attackTick, atkData) === 'active') {
+        const stats = CHARACTERS[p.charId];
+        const extraReach =
+          atkSlot === 'airKick'
+            ? stats.kickExtraReach
+            : (atkSlot === 'combo3' ? stats.kickExtraReach : 0) +
+              (p.weapon ? WEAPON_STATS[p.weapon].reachBonus : 0);
+        buildAttackHitboxInto(debugAtkBoxScratch, sx, iz, p.facing, atkData, extraReach);
+        ctx.strokeStyle = '#FF2E88';
+        ctx.strokeRect(
+          Math.round(debugAtkBoxScratch.x - debugAtkBoxScratch.w * 0.5),
+          Math.round(sy - debugAtkBoxScratch.z - debugAtkBoxScratch.h),
+          Math.round(debugAtkBoxScratch.w),
+          Math.round(debugAtkBoxScratch.h)
+        );
+      }
     }
   }
 }

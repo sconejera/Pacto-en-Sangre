@@ -1,5 +1,6 @@
 import { GameAudio } from './audio';
 import {
+  ATTACK_FRAME_DATA,
   BOSSES,
   CHARACTERS,
   ENEMY_BASE_STATS,
@@ -18,13 +19,17 @@ import { renderWorld, type RenderWorldState } from './renderer';
 import {
   applyAdaptiveDifficultyToSpawns,
   applySpecialCost,
+  buildAttackHitboxInto,
   canActivateSpecial,
+  canChainFromTick,
   clampWalkY,
   computeLevelResults,
   computeSpawnStagger,
   countCrossedExtraLives,
   createEmptyGamepadSnapshot,
   evaluateGrabbedByEnemyState,
+  getAttackPhase,
+  getAttackTotalTicks,
   getPlayerAttackDamage,
   lerp,
   normalizeMoveAxesInto,
@@ -44,6 +49,7 @@ import {
 import { loadAllCharacterSprites } from './sprites';
 import { loadAllWorldAssets, type WorldAssets } from './worldSprites';
 import type {
+  AttackSlot,
   BossAttackKind,
   BossEntity,
   BreakableEntity,
@@ -58,6 +64,7 @@ import type {
   LevelDef,
   Particle,
   PickupEntity,
+  PlayerActionState,
   PlayerEntity,
   ProjectileEntity,
   WeaponType,
@@ -222,6 +229,20 @@ export class NoFirmoEngine {
   };
   private normScratch = { nx: 0, ny: 0 };
   private velScratch = { vx: 0, vy: 0 };
+  private atkBoxScratch = { x: 0, z: 0, w: 0, h: 0 };
+  private simTick = 0;
+  private devTracing = false;
+  private devTrace: {
+    simTick: number;
+    state: PlayerActionState;
+    comboStep: 0 | 1 | 2 | 3;
+    attackTick: number;
+    hits: number;
+    stateTimer: number;
+    animTime: number;
+    frame: number | null;
+  }[] = [];
+  private devChainedHits: number | null = null;
 
   private debugEnabled = false;
   private debugHitboxes = false;
@@ -310,6 +331,48 @@ export class NoFirmoEngine {
     this.bindEvents();
     this.audio.preload();
     void this.initAssets(autostart);
+
+    if (import.meta.env.MODE !== 'production') {
+      const win = window as unknown as {
+        __NF_DEBUG__?: {
+          startTrace: () => void;
+          getTrace: () => {
+            simTick: number;
+            state: PlayerActionState;
+            comboStep: 0 | 1 | 2 | 3;
+            attackTick: number;
+            hits: number;
+            stateTimer: number;
+            animTime: number;
+            frame: number | null;
+          }[];
+          spawnTestBreakable: (dx: number) => number | null;
+        };
+      };
+      win.__NF_DEBUG__ = {
+        startTrace: () => {
+          this.devTrace = [];
+          this.devTracing = true;
+        },
+        getTrace: () => this.devTrace.slice(),
+        spawnTestBreakable: (dx: number) => {
+          const p = this.players[0];
+          if (!p) return null;
+          const id = this.nextEntityId++;
+          this.breakables.push({
+            id,
+            kind: 'cajon',
+            x: p.x + dx,
+            y: p.y,
+            hp: 2,
+            maxHp: 2,
+            hitFlashTimer: 0,
+            broken: false,
+          });
+          return id;
+        },
+      };
+    }
   }
 
   private async initAssets(autostart: boolean): Promise<void> {
@@ -446,6 +509,14 @@ export class NoFirmoEngine {
     }
     this.audio.destroy();
     this.unbindEvents();
+    if (import.meta.env.MODE !== 'production') {
+      const win = window as unknown as {
+        __NF_DEBUG__?: unknown;
+        __NF_DEBUG_PLAYER_FRAME__?: number;
+      };
+      delete win.__NF_DEBUG__;
+      delete win.__NF_DEBUG_PLAYER_FRAME__;
+    }
   }
 
   private setScreen(next: GameScreen): void {
@@ -561,6 +632,7 @@ export class NoFirmoEngine {
     p.score = 0; // Puntaje vuelve a 0 al continuar (sección 4.11)
     p.state = 'idle';
     p.stateTimer = 0;
+    p.attackTick = 0;
     p.vx = 0;
     p.vy = 0;
     p.vz = 0;
@@ -657,6 +729,7 @@ export class NoFirmoEngine {
       comboStep: 0,
       comboWindowTimer: 0,
       attackId: 0,
+      attackTick: 0,
       attackHitSet: new Set(),
       weapon: null,
       weaponUses: 0,
@@ -733,6 +806,7 @@ export class NoFirmoEngine {
       p.facing = 1;
       p.state = 'idle';
       p.stateTimer = 0;
+      p.attackTick = 0;
       p.invulnTimer = 0.8;
       p.damageTakenOnBoss = 0;
       p.grabTargetId = null;
@@ -778,6 +852,7 @@ export class NoFirmoEngine {
       p.facing = 1;
       p.state = 'idle';
       p.stateTimer = 0;
+      p.attackTick = 0;
       p.grabTargetId = null;
       p.grabPushTimer = 0;
       p.mashBreakCount = 0;
@@ -890,6 +965,8 @@ export class NoFirmoEngine {
 
     // Fixed 60 Hz simulation accumulator with sub-tick interpolation
     const fixedStep = 1 / 60;
+    const devTraceStartIdx =
+      import.meta.env.MODE !== 'production' ? this.devTrace.length : 0;
     this.accumulator += dt;
     while (this.accumulator >= fixedStep) {
       this.accumulator -= fixedStep;
@@ -902,7 +979,34 @@ export class NoFirmoEngine {
     }
     this.renderAlpha = this.hitstopTimer > 0 ? 1 : this.accumulator / fixedStep;
 
+    if (import.meta.env.MODE !== 'production' && typeof window !== 'undefined') {
+      (window as unknown as { __NF_DEBUG_PLAYER_FRAME__?: number }).__NF_DEBUG_PLAYER_FRAME__ =
+        undefined;
+    }
+
     this.drawCurrentScene();
+
+    if (import.meta.env.MODE !== 'production' && this.devTrace.length > devTraceStartIdx) {
+      const player = this.players[0];
+      const renderedFrame =
+        typeof window !== 'undefined'
+          ? (window as unknown as { __NF_DEBUG_PLAYER_FRAME__?: number }).__NF_DEBUG_PLAYER_FRAME__
+          : undefined;
+      if (typeof renderedFrame === 'number' && player) {
+        for (let i = devTraceStartIdx; i < this.devTrace.length; i++) {
+          const row = this.devTrace[i];
+          if (
+            row.state === player.state ||
+            (row.state === 'attack1' ||
+              row.state === 'attack2' ||
+              row.state === 'attack3' ||
+              row.state === 'airKick')
+          ) {
+            row.frame = renderedFrame;
+          }
+        }
+      }
+    }
 
     this.hudSyncTimer += dt;
     if (this.hudSyncTimer >= 0.08) {
@@ -965,14 +1069,48 @@ export class NoFirmoEngine {
 
     // Read unified input once per fixed step
     const input = this.consumeInput();
+    this.simTick += 1;
+    const devTracingActive = import.meta.env.MODE !== 'production' && this.devTracing;
+    const preState = devTracingActive ? player.state : 'idle';
+    const preComboStep = devTracingActive ? player.comboStep : 0;
+    const preAttackTick = devTracingActive ? player.attackTick : 0;
+    if (import.meta.env.MODE !== 'production') {
+      this.devChainedHits = null;
+    }
 
     this.updatePlayer(player, input, dt);
+
     this.updateEnemies(player, lvl, dt);
     if (this.boss) {
       this.updateBoss(this.boss, player, lvl, dt);
     }
     this.updateProjectiles(player, dt);
     this.updateHazards(player, dt);
+
+    if (import.meta.env.MODE !== 'production' && devTracingActive) {
+      const wasAtk =
+        preState === 'attack1' ||
+        preState === 'attack2' ||
+        preState === 'attack3' ||
+        preState === 'airKick';
+      const interruptedByDamage =
+        player.state === 'hurt' ||
+        player.state === 'knockdown' ||
+        player.state === 'getup' ||
+        player.state === 'ko' ||
+        player.state === 'grabbedByEnemy';
+      const traceState = wasAtk && !interruptedByDamage ? preState : player.state;
+      this.devTrace.push({
+        simTick: this.simTick,
+        state: traceState,
+        comboStep: preComboStep,
+        attackTick: preAttackTick,
+        hits: wasAtk ? (this.devChainedHits ?? player.attackHitSet.size) : 0,
+        stateTimer: player.stateTimer,
+        animTime: player.animTime,
+        frame: null,
+      });
+    }
     this.updatePickups(player, dt);
     this.updateSpecialFx(player, dt);
     this.updateParticlesAndTexts(dt);
@@ -1165,9 +1303,11 @@ export class NoFirmoEngine {
       }
       if (p.stateTimer <= 0) {
         if (p.state === 'knockdown') {
+          // Reinicia animTime para que getup inicie en el frame 0.
           p.state = 'getup';
+          p.animTime = 0;
           p.stateTimer = 0.25;
-          p.invulnTimer = 1.0; // 1.0s invulnerability on get-up (sección 4.7)
+          p.invulnTimer = 1.0; // 1.0s invulnerabilidad al levantarse (sección 4.7)
           p.vx = 0;
         } else if (p.state === 'hurt' || p.state === 'getup') {
           p.state = 'idle';
@@ -1190,7 +1330,11 @@ export class NoFirmoEngine {
       p.stateTimer -= dt;
       p.x += p.vx * dt;
       this.clampPlayerX(p);
-      this.checkPlayerMeleeHits(p, stats.shoulderDamage, 58, true, true);
+      this.atkBoxScratch.w = 58;
+      this.atkBoxScratch.x = p.x + p.facing * (58 * 0.55);
+      this.atkBoxScratch.z = p.z;
+      this.atkBoxScratch.h = 96;
+      this.checkPlayerMeleeHits(p, stats.shoulderDamage, this.atkBoxScratch, true, true);
       if (p.stateTimer <= 0) {
         if (stats.shoulderRecovery > 0) {
           p.state = 'recover';
@@ -1322,29 +1466,61 @@ export class NoFirmoEngine {
       p.state === 'attack3' ||
       p.state === 'airKick'
     ) {
-      p.stateTimer -= dt;
+      p.stateTimer = Math.max(0, p.stateTimer - dt);
+      const slot: AttackSlot =
+        p.state === 'attack1'
+          ? 'combo1'
+          : p.state === 'attack2'
+          ? 'combo2'
+          : p.state === 'attack3'
+          ? 'combo3'
+          : 'airKick';
+      const atkData = ATTACK_FRAME_DATA[p.charId][slot];
+      const phase = getAttackPhase(p.attackTick, atkData);
+
       if (p.state === 'airKick') {
         const wasAir = p.z > 0;
         p.x += p.vx * dt;
         p.y = clampWalkY(p.y + p.vy * dt);
         this.applyGravityAndClamp(p, dt);
-        this.checkPlayerMeleeHits(p, 10, 56 + stats.kickExtraReach, false, false);
+        if (phase === 'active') {
+          buildAttackHitboxInto(
+            this.atkBoxScratch,
+            p.x,
+            p.z,
+            p.facing,
+            atkData,
+            stats.kickExtraReach
+          );
+          this.checkPlayerMeleeHits(p, 10, this.atkBoxScratch, false, false);
+        }
         if (wasAir && p.z <= 0) {
           p.state = 'idle';
+          p.stateTimer = 0;
+          p.attackTick = 0;
           p.vx *= 0.35;
           p.vy = 0;
           p.squashX = 1.2;
           p.squashY = 0.82;
           this.spawnDustBurst(p.x, p.y, 4);
+        } else {
+          p.attackTick += 1;
+          if (getAttackPhase(p.attackTick, atkData) === 'done') {
+            p.state = p.z > 0 ? 'jump' : 'idle';
+            p.stateTimer = 0;
+            p.attackTick = 0;
+          }
         }
       } else {
         const step: 1 | 2 | 3 = p.state === 'attack1' ? 1 : p.state === 'attack2' ? 2 : 3;
-        const dmg = getPlayerAttackDamage(p.charId, step, p.weapon);
-        const reach =
-          54 +
-          (step === 3 ? stats.kickExtraReach : 0) +
-          (p.weapon ? WEAPON_STATS[p.weapon].reachBonus : 0);
-        this.checkPlayerMeleeHits(p, dmg, reach, step === 3, false);
+        if (phase === 'active') {
+          const dmg = getPlayerAttackDamage(p.charId, step, p.weapon);
+          const extraReach =
+            (step === 3 ? stats.kickExtraReach : 0) +
+            (p.weapon ? WEAPON_STATS[p.weapon].reachBonus : 0);
+          buildAttackHitboxInto(this.atkBoxScratch, p.x, p.z, p.facing, atkData, extraReach);
+          this.checkPlayerMeleeHits(p, dmg, this.atkBoxScratch, step === 3, false);
+        }
 
         // Smooth forward step-in velocity integration & bleed during combo strikes
         p.x += p.vx * dt;
@@ -1352,14 +1528,18 @@ export class NoFirmoEngine {
         p.vx = this.velScratch.vx;
         p.vy = this.velScratch.vy;
 
-        // Allow chaining next attack in combo
-        if (bufferedAttack && step < 3 && p.stateTimer < 0.14) {
+        // Allow chaining next attack only after active phase completes
+        if (bufferedAttack && step < 3 && canChainFromTick(p.attackTick, atkData)) {
           this.attackBufferTimer = 0;
+          this.clampPlayerX(p);
           this.startComboAttack(p, (step + 1) as 2 | 3);
           return;
         }
-        if (p.stateTimer <= 0) {
+        p.attackTick += 1;
+        if (getAttackPhase(p.attackTick, atkData) === 'done') {
           p.state = 'idle';
+          p.stateTimer = 0;
+          p.attackTick = 0;
           p.vx = 0;
           p.comboWindowTimer = stats.comboWindow;
         }
@@ -1396,10 +1576,12 @@ export class NoFirmoEngine {
 
       if (bufferedAttack) {
         this.attackBufferTimer = 0;
+        const airData = ATTACK_FRAME_DATA[p.charId].airKick;
         p.state = 'airKick';
-        p.stateTimer = 0.35;
+        p.stateTimer = getAttackTotalTicks(airData) / 60;
         p.animTime = 0;
         p.attackId++;
+        p.attackTick = 0;
         p.attackHitSet.clear();
       } else if (p.z <= 0) {
         p.state = 'idle';
@@ -1526,13 +1708,19 @@ export class NoFirmoEngine {
   }
 
   private startComboAttack(p: PlayerEntity, step: 1 | 2 | 3): void {
+    if (import.meta.env.MODE !== 'production') {
+      this.devChainedHits = p.attackHitSet.size;
+    }
+    const slot: AttackSlot = step === 1 ? 'combo1' : step === 2 ? 'combo2' : 'combo3';
+    const atkData = ATTACK_FRAME_DATA[p.charId][slot];
     p.comboStep = step;
     p.state = step === 1 ? 'attack1' : step === 2 ? 'attack2' : 'attack3';
-    p.stateTimer = step === 3 ? 0.24 : 0.18;
+    p.stateTimer = getAttackTotalTicks(atkData) / 60;
     p.vx = p.facing * (step === 3 ? 115 : step === 2 ? 48 : 24);
     p.vy = 0;
     p.animTime = 0;
     p.attackId++;
+    p.attackTick = 0;
     p.attackHitSet.clear();
   }
 
@@ -1738,14 +1926,15 @@ export class NoFirmoEngine {
   private checkPlayerMeleeHits(
     p: PlayerEntity,
     damage: number,
-    reach: number,
+    hitbox: { x: number; z: number; w: number; h: number },
     knockdown: boolean,
     isShoulder: boolean
   ): void {
-    const atkX = p.x + p.facing * (reach * 0.55);
+    const atkX = hitbox.x;
     const atkY = p.y;
-    const atkZ = p.z;
-    const atkH = 96;
+    const atkZ = hitbox.z;
+    const atkW = hitbox.w;
+    const atkH = hitbox.h;
 
     let landedOnTarget = false;
 
@@ -1754,7 +1943,7 @@ export class NoFirmoEngine {
       if (e.hp <= 0 || e.state === 'ko' || e.state === 'knockdown' || p.attackHitSet.has(e.id)) {
         continue;
       }
-      if (overlapsHitbox25D(atkX, atkY, atkZ, reach, atkH, e.x, e.y, e.z, 42, 92)) {
+      if (overlapsHitbox25D(atkX, atkY, atkZ, atkW, atkH, e.x, e.y, e.z, 42, 92)) {
         p.attackHitSet.add(e.id);
         this.damageEnemy(e, damage, p.facing, knockdown, p, isShoulder);
         landedOnTarget = true;
@@ -1774,7 +1963,7 @@ export class NoFirmoEngine {
           atkX,
           atkY,
           atkZ,
-          reach,
+          atkW,
           atkH,
           this.boss.x,
           this.boss.y,
@@ -1792,7 +1981,7 @@ export class NoFirmoEngine {
     for (let i = 0; i < this.breakables.length; i++) {
       const b = this.breakables[i];
       if (b.broken || p.attackHitSet.has(b.id)) continue;
-      if (overlapsHitbox25D(atkX, atkY, atkZ, reach, atkH, b.x, b.y, 0, 44, 52)) {
+      if (overlapsHitbox25D(atkX, atkY, atkZ, atkW, atkH, b.x, b.y, 0, 44, 52)) {
         p.attackHitSet.add(b.id);
         this.hitBreakable(b);
       }
@@ -2282,7 +2471,9 @@ export class NoFirmoEngine {
               const drainDur = e.type === 'chupetona' ? 3.0 : 2.0;
               e.state = 'draining';
               e.stateTimer = drainDur;
+              // Reinicia animTime para que la pose de reacción se vea desde el primer frame.
               p.state = 'grabbedByEnemy';
+              p.animTime = 0;
               p.stateTimer = drainDur;
               p.mashBreakCount = 0;
               this.damagePlayer(p, e.type === 'zombie' ? 4 : 2, e.facing, false);
@@ -2660,7 +2851,9 @@ export class NoFirmoEngine {
       b.hasHitPlayerThisAttack = true;
       if (b.attackKind === 'signatureGrab' && p.state !== 'grabbedByEnemy') {
         this.releasePlayerGrabTarget(p, false);
+        // Reinicia animTime para que la pose de reacción se vea desde el primer frame.
         p.state = 'grabbedByEnemy';
+        p.animTime = 0;
         p.stateTimer = 1.8;
         p.mashBreakCount = 0;
         b.drainTimer = 1.8;
@@ -2707,12 +2900,14 @@ export class NoFirmoEngine {
       }
       if (p.lives <= 0) {
         p.state = 'ko';
+        p.animTime = 0;
         p.stateTimer = 0.7;
         this.continueCountdown = 10;
         this.setScreen('CONTINUAR');
       } else {
         p.hp = p.maxHp;
         p.state = 'knockdown';
+        p.animTime = 0;
         p.stateTimer = 0.8;
         p.invulnTimer = 1.6;
         p.vz = 190;
@@ -2728,6 +2923,7 @@ export class NoFirmoEngine {
       p.mashBreakCount = 0;
       this.releaseGrabbingEnemies(p.x);
       p.state = 'knockdown';
+      p.animTime = 0;
       p.stateTimer = 0.8;
       p.vx = dir * 180;
       p.vz = 150;
@@ -2736,7 +2932,9 @@ export class NoFirmoEngine {
         p.weapon = null;
       }
     } else if (p.state !== 'grabbedByEnemy') {
+      // Reinicia animTime para que la pose de daño se vea desde el frame 0.
       p.state = 'hurt';
+      p.animTime = 0;
       p.stateTimer = 0.36;
       p.vx = dir * 115;
       p.invulnTimer = 0.8; // 0.8s parpadeo invulnerable (sección 4.7)

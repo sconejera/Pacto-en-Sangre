@@ -8,6 +8,7 @@ import {
   WEAPON_STATS,
 } from './data';
 import type {
+  AttackFrameData,
   BossAttackKind,
   BossEntity,
   CharacterId,
@@ -1266,8 +1267,51 @@ export function shouldReleaseCrowdGrabHold(
   return { shouldRelease: false, nextDisengageTimer: next };
 }
 
+export type AttackPhase = 'startup' | 'active' | 'recovery' | 'done';
 
+export function getAttackTotalTicks(data: AttackFrameData): number {
+  return data.startupTicks + data.activeTicks + data.recoveryTicks;
+}
 
+export function getAttackPhase(tick: number, data: AttackFrameData): AttackPhase {
+  if (tick < data.startupTicks) return 'startup';
+  const activeEnd = data.startupTicks + data.activeTicks;
+  if (tick < activeEnd) return 'active';
+  const total = activeEnd + data.recoveryTicks;
+  if (tick < total) return 'recovery';
+  return 'done';
+}
 
+export function canChainFromTick(tick: number, data: AttackFrameData): boolean {
+  return tick >= data.startupTicks + data.activeTicks;
+}
 
+export function getAttackFrameSlot(tick: number, data: AttackFrameData): 0 | 1 | 2 | 3 {
+  const phase = getAttackPhase(tick, data);
+  if (phase === 'startup') return 0;
+  if (phase === 'active') return 1;
+  if (phase === 'recovery') {
+    const recOffset = tick - (data.startupTicks + data.activeTicks);
+    const firstHalf = Math.ceil(data.recoveryTicks / 2);
+    return recOffset < firstHalf ? 2 : 3;
+  }
+  return 3;
+}
 
+export function buildAttackHitboxInto(
+  out: { x: number; z: number; w: number; h: number },
+  playerX: number,
+  playerZ: number,
+  facing: 1 | -1,
+  data: AttackFrameData,
+  extraReach = 0
+): void {
+  const startX = data.hitStartX;
+  const endX = data.hitEndX + Math.max(0, extraReach);
+  const w = Math.max(1, endX - startX);
+  const centerOffset = (startX + endX) * 0.5;
+  out.x = playerX + facing * centerOffset;
+  out.z = playerZ;
+  out.w = w;
+  out.h = data.hitHeight;
+}
