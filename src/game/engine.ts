@@ -1583,8 +1583,7 @@ export class NoFirmoEngine {
         p.animTime = 0;
         // La patada aérea ahora se convierte en ataque descendente: al conectar
         // el golpe, el personaje cae hacia el objetivo en vez de flotar sobre él.
-        // La patada inicia una caída controlada, sin acelerar demasiado al suelo.
-        p.vz = Math.min(p.vz, -120);
+        // La patada conserva la trayectoria del salto: solo cambia la acción y la pose.
         p.attackId++;
         p.attackTick = 0;
         p.attackHitSet.clear();
