@@ -1561,8 +1561,9 @@ export class NoFirmoEngine {
         this.velScratch,
         p.vx,
         p.vy,
-        this.normScratch.nx * stats.speedX * 0.68,
-        this.normScratch.ny * stats.speedY * 0.6,
+        // El salto conserva control aéreo, ahora con un alcance horizontal algo mayor.
+        this.normScratch.nx * stats.speedX * 0.76,
+        this.normScratch.ny * stats.speedY * 0.62,
         1400,
         900,
         dt
@@ -1582,7 +1583,8 @@ export class NoFirmoEngine {
         p.animTime = 0;
         // La patada aérea ahora se convierte en ataque descendente: al conectar
         // el golpe, el personaje cae hacia el objetivo en vez de flotar sobre él.
-        p.vz = Math.min(p.vz, -300);
+        // La patada inicia una caída controlada, sin acelerar demasiado al suelo.
+        p.vz = Math.min(p.vz, -120);
         p.attackId++;
         p.attackTick = 0;
         p.attackHitSet.clear();

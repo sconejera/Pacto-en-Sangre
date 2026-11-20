@@ -16,7 +16,8 @@ export const WALK_MIN_Y = 436;
 export const WALK_MAX_Y = 528;
 export const DEPTH_TOLERANCE_Y = 22;
 export const GRAVITY = 1800;
-export const BASE_JUMP_IMPULSE = 620;
+// Salto ligeramente más alto para dar más margen de evasión y preparar ataques aéreos.
+export const BASE_JUMP_IMPULSE = 660;
 export const RUN_SPEED = 260;
 
 export const PALETTE = {
