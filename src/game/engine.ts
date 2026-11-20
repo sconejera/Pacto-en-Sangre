@@ -1580,6 +1580,9 @@ export class NoFirmoEngine {
         p.state = 'airKick';
         p.stateTimer = getAttackTotalTicks(airData) / 60;
         p.animTime = 0;
+        // La patada aérea ahora se convierte en ataque descendente: al conectar
+        // el golpe, el personaje cae hacia el objetivo en vez de flotar sobre él.
+        p.vz = Math.min(p.vz, -300);
         p.attackId++;
         p.attackTick = 0;
         p.attackHitSet.clear();
@@ -2076,9 +2079,12 @@ export class NoFirmoEngine {
       e.vz = 160;
       this.addScore(p, 50);
     } else if (!(e.type === 'fan' && e.hysteric)) {
-      e.state = 'hurt';
-      e.stateTimer = 0.4;
+      // Los golpes normales dejan al enemigo aturdido brevemente: durante ese
+      // intervalo puede recibir el siguiente eslabón del combo con claridad.
+      e.state = 'stunned';
+      e.stateTimer = 0.28;
       e.vx = dir * 90;
+      this.spawnFloatingText(e.x, e.y, e.z + 108, 'ATURDIDO', PALETTE.cyan, 0.82);
     }
   }
 
@@ -2309,7 +2315,7 @@ export class NoFirmoEngine {
         continue;
       }
 
-      if (e.state === 'hurt' || e.state === 'knockdown' || e.state === 'getup' || e.state === 'recover') {
+      if (e.state === 'hurt' || e.state === 'stunned' || e.state === 'knockdown' || e.state === 'getup' || e.state === 'recover') {
         e.stateTimer -= dt;
         e.x += e.vx * dt;
         e.vx *= Math.exp(-6.5 * dt);
@@ -2332,6 +2338,8 @@ export class NoFirmoEngine {
           if (e.state === 'knockdown') {
             e.state = 'getup';
             e.stateTimer = 0.25;
+          } else if (e.state === 'stunned') {
+            e.state = 'approach';
           } else {
             e.state = 'approach';
           }

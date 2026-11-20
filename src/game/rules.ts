@@ -705,6 +705,8 @@ export function getEnemySheetFrameIndex(
       return Math.floor(animTime * 6) % 2 === 0 ? 6 : 11;
     case 'hurt':
       return stateTimer > 0.2 ? 12 : 4;
+    case 'stunned':
+      return Math.floor(animTime * 12) % 2 === 0 ? 4 : 12;
     case 'knockdown':
     case 'ko':
     case 'thrown':

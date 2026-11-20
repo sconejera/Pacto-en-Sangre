@@ -27,6 +27,7 @@ import type {
   AttackSlot,
   BossEntity,
   BreakableEntity,
+  BossAttackKind,
   CharacterId,
   EnemyEntity,
   FloatingText,
@@ -1431,7 +1432,7 @@ function drawEnemy(
       ctx.translate(8, 0);
       ctx.rotate(0.12);
       ctx.scale(1.08, 0.94);
-    } else if (e.state === 'hurt') {
+    } else if (e.state === 'hurt' || e.state === 'stunned') {
       ctx.rotate(-0.14);
     } else if (walkTilt !== 0) {
       ctx.rotate(walkTilt);
@@ -1528,6 +1529,19 @@ function drawEnemy(
     ctx.lineWidth = 4;
     ctx.strokeText('!', sx, sy - iz - 118);
     ctx.fillText('!', sx, sy - iz - 118);
+  }
+
+  if (e.state === 'stunned') {
+    ctx.save();
+    ctx.fillStyle = PALETTE.cyan;
+    ctx.strokeStyle = PALETTE.night;
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    const bob = Math.sin(timeSec * 12 + e.id) * 3;
+    ctx.strokeText('✦ ATURDIDO ✦', sx, sy - iz - 116 + bob);
+    ctx.fillText('✦ ATURDIDO ✦', sx, sy - iz - 116 + bob);
+    ctx.restore();
   }
 
   if (debugHitboxes) {
@@ -1721,6 +1735,19 @@ function drawManagerArt(
   drawOutlinedRect(ctx, state === 'attack' ? 16 : 12, -52, 22, 16, PALETTE.yellow);
 }
 
+function bossTelegraphStyle(kind: BossAttackKind): { color: string; symbol: string; label: string } {
+  if (kind === 'stompWave' || kind === 'soundPush' || kind === 'fireWave') {
+    return { color: PALETTE.yellow, symbol: '◎', label: 'ÁREA' };
+  }
+  if (kind === 'noteFan' || kind === 'throwPhone' || kind === 'contractSweep' || kind === 'contractRain') {
+    return { color: PALETTE.cyan, symbol: '✦', label: 'PROYECTIL' };
+  }
+  if (kind === 'signatureGrab' || kind === 'shoulderCharge' || kind === 'radioDash' || kind === 'flyingKick') {
+    return { color: PALETTE.magenta, symbol: '↔', label: 'HORIZONTAL' };
+  }
+  return { color: PALETTE.demonRed, symbol: '!', label: 'GOLPE' };
+}
+
 function drawBoss(
   ctx: CanvasRenderingContext2D,
   b: BossEntity,
@@ -1852,10 +1879,17 @@ function drawBoss(
 
   const hitWhite = b.hitFlashTimer > 0;
   if (b.state === 'telegraph') {
-    ctx.fillStyle = b.defId === 5 ? 'rgba(220, 38, 38, 0.34)' : 'rgba(255, 210, 63, 0.34)';
+    const telegraph = bossTelegraphStyle(b.attackKind);
+    ctx.fillStyle = `${telegraph.color}55`;
     ctx.beginPath();
-    ctx.ellipse(0, -76, 48, 76, 0, 0, Math.PI * 2);
+    const pulse = 1 + Math.sin(timeSec * 18) * 0.08;
+    ctx.ellipse(0, -76, 48 * pulse, 76 * pulse, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = telegraph.color;
+    ctx.lineWidth = 3;
+    ctx.setLineDash(b.attackKind === 'soundPush' || b.attackKind === 'fireWave' || b.attackKind === 'contractRain' ? [8, 5] : []);
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   if (activeSprite) {
@@ -1906,19 +1940,40 @@ function drawBoss(
       activeSprite?.targetHeightPx ?? 150,
       theme,
       timeSec,
-      b.defId === 5 && b.phase >= 2 ? PALETTE.demonRed : b.state === 'telegraph' ? PALETTE.yellow : undefined,
-      b.defId === 5 ? 0.45 : b.state === 'telegraph' ? 0.35 : 0.15
+      b.state === 'telegraph'
+        ? bossTelegraphStyle(b.attackKind).color
+        : b.defId === 5 && b.phase >= 2
+        ? PALETTE.demonRed
+        : undefined,
+      b.defId === 5 ? 0.45 : b.state === 'telegraph' ? 0.42 : 0.15
     );
   }
 
   if (b.state === 'telegraph') {
-    ctx.fillStyle = PALETTE.demonRed;
-    ctx.font = 'bold 22px monospace';
+    const telegraph = bossTelegraphStyle(b.attackKind);
+    const unblockable =
+      b.attackKind === 'soundPush' ||
+      b.attackKind === 'fireWave' ||
+      b.attackKind === 'contractRain' ||
+      b.attackKind === 'stompWave';
+    ctx.fillStyle = telegraph.color;
+    ctx.font = 'bold 15px monospace';
     ctx.textAlign = 'center';
-    ctx.strokeStyle = PALETTE.yellow;
+    ctx.strokeStyle = PALETTE.night;
     ctx.lineWidth = 4;
-    ctx.strokeText('¡CUIDADO!', sx, sy - iz - 156);
-    ctx.fillText('¡CUIDADO!', sx, sy - iz - 156);
+    const label = unblockable
+      ? `${telegraph.symbol} ¡IMBLOQUEABLE! ${telegraph.symbol}`
+      : `${telegraph.symbol} ${telegraph.label}`;
+    ctx.strokeText(label, sx, sy - iz - 156);
+    ctx.fillText(label, sx, sy - iz - 156);
+  } else if (b.state === 'recover' || b.state === 'hurt') {
+    ctx.fillStyle = PALETTE.cyan;
+    ctx.font = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.strokeStyle = PALETTE.night;
+    ctx.lineWidth = 3;
+    ctx.strokeText('VULNERABLE', sx, sy - iz - 148);
+    ctx.fillText('VULNERABLE', sx, sy - iz - 148);
   }
 
   if (debugHitboxes) {
@@ -2081,10 +2136,11 @@ function drawHazardZone(
   const sx = Math.round(h.x - cameraX);
   const sy = Math.round(h.y);
   const progress = 1 - Math.max(0, h.timer) / h.maxTimer;
+  const hazardColor = h.kind === 'shockwave' ? PALETTE.yellow : h.kind === 'enVivo' ? PALETTE.magenta : PALETTE.cyan;
   ctx.save();
-  ctx.strokeStyle = h.kind === 'shockwave' ? PALETTE.yellow : PALETTE.demonRed;
+  ctx.strokeStyle = hazardColor;
   ctx.lineWidth = 3;
-  ctx.fillStyle = h.kind === 'shockwave' ? 'rgba(255,210,63,0.22)' : 'rgba(193,18,31,0.28)';
+  ctx.fillStyle = h.kind === 'shockwave' ? 'rgba(255,210,63,0.22)' : h.kind === 'enVivo' ? 'rgba(232,59,255,0.2)' : 'rgba(25,227,255,0.2)';
   ctx.beginPath();
   ctx.ellipse(sx, sy, h.radius, h.radius * 0.42, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -2099,12 +2155,21 @@ function drawHazardZone(
     ctx.fillStyle = Math.sin(timeSec * 10) > 0 ? '#FFFFFF' : PALETTE.yellow;
     ctx.font = 'bold 12px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('EN VIVO', sx, sy - 6);
+    ctx.fillText('◎ EN VIVO', sx, sy - 6);
   } else if (h.kind === 'contractRain') {
     const fallZ = Math.max(0, (1 - progress) * 260);
     drawOutlinedRect(ctx, sx - 12, sy - fallZ - 20, 24, 30, '#FEF2F2');
     ctx.fillStyle = PALETTE.demonRed;
     ctx.fillRect(sx - 8, sy - fallZ - 8, 16, 4);
+    ctx.fillStyle = PALETTE.cyan;
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('✦', sx, sy - fallZ - 28);
+  } else if (h.kind === 'shockwave') {
+    ctx.fillStyle = PALETTE.yellow;
+    ctx.font = 'bold 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('◎', sx, sy - 10);
   }
   ctx.restore();
 }

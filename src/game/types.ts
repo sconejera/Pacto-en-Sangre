@@ -268,6 +268,7 @@ export type EnemyState =
   | 'attack'
   | 'recover'
   | 'hurt'
+  | 'stunned'
   | 'knockdown'
   | 'getup'
   | 'grabbed'

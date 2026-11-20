@@ -730,10 +730,10 @@ export function GameShell() {
                   <strong className="text-[#19E3FF]">FLECHAS / WASD:</strong> Moverte (doble toque = correr)
                 </li>
                 <li>
-                  <strong className="text-[#E83BFF]">J (A):</strong> Golpe / Combo de 3 / Recoger arma
+                  <strong className="text-[#E83BFF]">J (A):</strong> Golpe / combo: J,J,J rápido · J,J,pausa,J pesado derriba · J,J,K lanza
                 </li>
                 <li>
-                  <strong className="text-[#FFD23F]">K (B):</strong> Salto (+ J en el aire = patada aérea)
+                  <strong className="text-[#FFD23F]">K (B):</strong> Salto (+ J en el aire = ataque descendente que derriba)
                 </li>
                 <li>
                   <strong className="text-[#7CFF4F]">J + K (o ESP):</strong> Especial (-8 HP si golpea)
@@ -1232,6 +1232,21 @@ export function GameShell() {
                         width: `${Math.max(0, (hud.bossHp / Math.max(1, hud.bossMaxHp)) * 100)}%`,
                       }}
                     />
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1 text-[7px] font-black tracking-wider sm:text-[8px]">
+                    {[1, 2, 3].map((phase) => (
+                      <span
+                        key={phase}
+                        className={`flex-1 text-center ${hud.bossPhase >= phase ? 'text-[#FFD23F]' : 'text-white/35'}`}
+                      >
+                        FASE {phase}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mt-0.5 hidden justify-center gap-2 text-[7px] font-bold tracking-wide text-white/75 sm:flex">
+                    <span className="text-[#E83BFF]">↔ horizontal</span>
+                    <span className="text-[#FFD23F]">◎ área</span>
+                    <span className="text-[#19E3FF]">✦ proyectil</span>
                   </div>
                 </div>
               )}
