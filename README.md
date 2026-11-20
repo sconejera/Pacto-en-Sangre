@@ -53,7 +53,10 @@ Desde las poblaciones hasta la torre corporativa, las calles fueron tomadas por 
 ### Teclado
 - **Moverse:** `Flechas` o `W A S D` *(doble toque izquierda/derecha para correr)*
 - **Golpe / Combo / Recoger arma o ítem:** `J`
-- **Salto:** `K` *(+ `J` en el aire = patada aérea)*
+- **Combo rápido:** `J · J · J`
+- **Golpe pesado con derribo:** `J · J · pausa · J`
+- **Remate que lanza:** `J · J · K`
+- **Salto y ataque descendente:** `K` y luego `J` en el aire
 - **Ataque Especial:** `J + K`
 - **Agarre cuerpo a cuerpo (caminar pegado al enemigo):** `J` rodillazo · `K` suplex · dirección opuesta para lanzar
 - **Pausa / Silenciar audio:** `P` / `M` *(o botón de bocina en pantalla)*
@@ -69,6 +72,39 @@ Al conectar un mando Xbox (USB o Bluetooth) se auto-asignan los botones y aparec
 
 ### Móvil / Táctil
 - Joystick virtual y botones táctiles (`A`, `B`, `ESP`) disponibles automáticamente durante el combate en dispositivos móviles o pantallas táctiles.
+
+---
+
+## Actualización de combate y comunicación visual
+
+La actualización de combate incorpora una estructura de combos más legible y con funciones distintas según el ritmo de entrada:
+
+- `J · J · J` encadena tres golpes rápidos.
+- `J · J · pausa · J` ejecuta un golpe pesado que derriba.
+- `J · J · K` termina la cadena con un golpe que lanza al enemigo.
+- `K` seguido de `J` durante el salto convierte el salto en un ataque descendente con utilidad ofensiva y capacidad de derribo.
+
+Los enemigos ahora pueden quedar en estado **ATURDIDO**, con una pose, texto cyan y una breve ventana de vulnerabilidad claramente visibles.
+
+Los jefes comunican sus ataques mediante telegráficos diferenciados:
+
+- `↔` magenta: ataque horizontal.
+- `◎` amarillo: ataque de área.
+- `✦` cyan: proyectil o lluvia de proyectiles.
+- `¡IMBLOQUEABLE!`: señal especial para ataques que no deben bloquearse.
+- `VULNERABLE`: aparece durante las ventanas de recuperación o daño del jefe.
+- La barra de vida muestra marcadores de **FASE 1**, **FASE 2** y **FASE 3**.
+
+### Archivos principales actualizados
+
+- `src/game/engine.ts`: lógica del ataque descendente y estado `stunned`.
+- `src/game/types.ts`: nuevo estado de enemigo `stunned`.
+- `src/game/rules.ts`: pose de aturdimiento para hojas de sprites.
+- `src/game/renderer.ts`: aturdimiento, telegráficos, hazards y vulnerabilidad.
+- `src/components/GameShell.tsx`: controles, leyenda visual y fases del jefe.
+- `vite.config.ts`: acceso del servidor local al dominio temporal de Preview.
+
+Validación realizada: `27` tests aprobados, `npm run lint` sin errores y `npm run build` exitoso.
 
 ---
 
