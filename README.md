@@ -1,4 +1,4 @@
-# FIRMADO EN SANGRE
+# PACTO EN SANGRE
 
 **Beat 'Em Up 2D Urbano Chileno** — Juego arcade de acción lateral en perspectiva 2.5D ambientado en Santiago de Chile, construido con React, TypeScript, HTML5 Canvas, Web Audio API y Vite. Funciona 100% del lado del cliente como aplicación web estática, sin dependencias de servidor ni claves de API.
 
