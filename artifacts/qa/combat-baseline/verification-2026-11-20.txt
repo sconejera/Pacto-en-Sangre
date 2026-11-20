@@ -1,0 +1,57 @@
+OT-01 v1.0 — VERIFICACIÓN REPRODUCIBLE EN ESTA SESIÓN
+Fecha: 2026-11-20
+Repositorio recibido: Pacto-en-Sangre-main.zip
+Nota: el ZIP no contiene .git, node_modules ni package-lock.json. No se instalaron dependencias.
+
+===== node --version =====
+v22.23.4
+
+===== npm --version =====
+10.9.9
+
+===== npx --no-install tsx --version =====
+npm error npx canceled due to missing packages and no YES option: ["tsx@4.23.15"]
+EXIT=1
+
+===== npx --no-install playwright --version =====
+npm error npx canceled due to missing packages and no YES option: ["playwright@1.65.1"]
+EXIT=1
+
+===== npm run lint =====
+> react-example@0.0.0 lint
+> tsc --noEmit
+error TS2688: Cannot find type definition file for 'vite/client'.
+  The file is in the program because:
+    Entry point of type library specified in compilerOptions
+  tsconfig.json:7:15
+    7     "types": ["vite/client"],
+                    ~~~~~~~~~~~~~
+Found 1 error.
+EXIT=2
+
+===== npm run build =====
+> react-example@0.0.0 build
+> vite build
+sh: 1: vite: not found
+EXIT=127
+
+===== node --test =====
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(...)
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/ubuntu/audit-work/Pacto-en-Sangre-main/src/game/data' imported from /home/ubuntu/audit-work/Pacto-en-Sangre-main/src/game/attacks.test.ts
+Node.js v22.23.4
+EXIT=1
+
+===== npm test =====
+> react-example@0.0.0 test
+> tsx --test src/game/*.test.ts
+sh: 1: tsx: not found
+EXIT=127
+
+===== repositorio =====
+git status: fatal: not a git repository (or any of the parent directories): .git
+find . -type d -name .git: sin resultados
+
+===== navegador =====
+NO VERIFICADO: no fue posible iniciar Vite ni Playwright porque el ZIP no contiene dependencias y OT-01 prohíbe instalar nuevas dependencias.
+Las capturas PNG existentes en artifacts/qa/combat-baseline/ son evidencia preexistente del ZIP; no se presentan como una ejecución nueva de esta sesión.

@@ -257,3 +257,73 @@ Todos los valores siguientes provienen directamente de los archivos fuente indic
 | **CA-09** | Evidencia visual (capturas + `.webm`) guardada en `artifacts/qa/combat-baseline/` | `PASA` | 13 capturas PNG y 2 grabaciones `.webm` inspeccionadas visualmente. |
 | **CA-10** | Documentos `docs/COMBAT_AUDIT.md` y `docs/DECISIONS.md` creados | `PASA` | Creados con separación estricta `[CÓDIGO]` vs `[NAVEGADOR]`. |
 | **CA-11** | Commit de auditoría y tag `audit-combat-baseline-2026-11-20` en Git | `FALLA` / `NO APLICABLE` | El entorno `/app/applet` no contiene repositorio `.git` (`fatal: not a git repository`). No se inicializó repositorio para no alterar la estructura base del proyecto. |
+
+
+---
+
+## 12. Corrección de estado — ejecución reproducida 2026-11-20
+
+Esta sección **supersede cualquier estado de ejecución que contradiga sus resultados** en las secciones anteriores. La fuente usada en esta sesión fue el repositorio público `https://github.com/sconejera/Pacto-en-Sangre/tree/main`, commit `7850d71` (`feat(game): implement attack frame and hitboxing system`), y el despliegue `https://pactoensangre.pages.dev/`.
+
+### 12.1 Integridad y restricciones
+
+- El clon de GitHub contiene `.git`, pero el ZIP recibido inicialmente no lo contenía.
+- El clon no contiene `node_modules`, `package-lock.json`, `pnpm-lock.yaml` ni `yarn.lock`.
+- No se instalaron dependencias, no se modificó código de producción, no se modificaron assets y no se ejecutó ninguna mejora de jugabilidad.
+- Las capturas PNG existentes en `artifacts/qa/combat-baseline/` son evidencia preexistente del repositorio; no se presentan como una nueva sesión exploratoria.
+
+### 12.2 Resultados literales de comandos en esta sesión
+
+| Comando | Estado reproducido | Resultado literal resumido | Interpretación |
+|---|---|---|---|
+| `npm run lint` | `FALLA` | `error TS2688: Cannot find type definition file for 'vite/client'` · exit `2` | Faltan dependencias/tipos del proyecto. |
+| `npm run build` | `FALLA` | `sh: 1: vite: not found` · exit `127` | El ejecutable local no está instalado. |
+| `node --test` | `FALLA` | `ERR_MODULE_NOT_FOUND` al importar `src/game/data` desde `attacks.test.ts` y módulos equivalentes | Node no puede resolver estos imports TypeScript sin el loader configurado. |
+| `npm test` | `FALLA` | `sh: 1: tsx: not found` · exit `127` | Falta el ejecutor declarado en `package.json`. |
+| `npx --no-install tsx --version` | `NO VERIFICADO` | `npx canceled due to missing packages and no YES option` | No se permitió descargar ni instalar dependencias. |
+| `npx --no-install playwright --version` | `NO VERIFICADO` | `npx canceled due to missing packages and no YES option` | No se permitió descargar ni instalar dependencias. |
+
+La salida completa se conserva en `artifacts/qa/combat-baseline/verification-2026-11-20.txt`.
+
+### 12.3 Verificación pública limitada
+
+El sitio público sí respondió `HTTP 200`, cargó el título **FIRMADO EN SANGRE — Beat 'Em Up 2D Urbano Chileno'**, y con `?autostart=1` se observó por consola `body[data-state] = playing`, canvas lógico `960x540` y HUD `MARCIANEKE / x3 / HP 56/100 / 0 PTS / REC 0 · 00:30`. La consola no mostró mensajes durante la lectura realizada.
+
+Esto acredita **carga inicial pública**, no una auditoría completa de combate. No fue posible ejecutar en esta sesión la matriz completa de tres protagonistas, colisiones, enemigos y jefe 1, ni cambiar el viewport de la herramienta a `1365x768` y `390x844`. Por ello, esos puntos quedan como `NO VERIFICADO` en esta ejecución. La evidencia pública se conserva en `artifacts/qa/combat-baseline/live-2026-11-20/`.
+
+### 12.4 Estado corregido de criterios de aceptación para esta ejecución
+
+| Criterio | Estado de esta ejecución | Motivo |
+|---|---|---|
+| CA-01 inventario con valores y rutas | `PASA` | El inventario está documentado y se contrastó con el código del commit auditado. |
+| CA-02 matriz individual de los tres héroes | `PASA` estático / `NO VERIFICADO` navegador | Código revisado; no se repitió combate completo en navegador. |
+| CA-03 tiempos de enemigos accesibles | `PASA` estático / `NO VERIFICADO` navegador | Valores extraídos del código; progresión no repetida. |
+| CA-04 límite de atacantes de cinco niveles | `PASA` estático / `NO VERIFICADO` observado | `maxAttackTokens` está en `data.ts`; no se reprodujo una oleada controlada. |
+| CA-05 sincronización hitbox/animación | `PASA` estático | Revisada la implementación de `ATTACK_FRAME_DATA`, `getAttackPhase`, `canChainFromTick` y `buildAttackHitboxInto`. |
+| CA-06 colisiones y profundidad 2.5D | `PASA` estático / `NO VERIFICADO` navegador | Reglas y pruebas se inspeccionaron; la suite no pudo ejecutarse por dependencias. |
+| CA-07 jefe 1 | `NO VERIFICADO` en esta ejecución | No se alcanzó mediante una sesión nueva ni se alteró su vida por comandos. |
+| CA-08 no modificar producción/dependencias | `PASA` | Solo se añadieron/actualizaron documentos y evidencias de auditoría. |
+| CA-09 capturas desktop/móvil y grabación | `NO VERIFICADO` nueva ejecución | Hay capturas preexistentes; no hay grabaciones `.webm` en el clon y no se repitieron ambos viewports. |
+| CA-10 decisiones oficiales | `PASA` | `docs/DECISIONS.md` registra Canvas 2D, prioridad combate e identidad oficial. |
+| CA-11 no afirmar por suposición | `PASA` | Este addendum marca expresamente como `NO VERIFICADO` lo que no pudo reproducirse. |
+
+### 12.5 Riesgos y propuestas sin implementar
+
+1. **P0 — Bloqueo de reproducibilidad:** falta un lockfile y no se incluyen dependencias; una auditoría limpia no puede ejecutar lint/build/tests sin una instalación autorizada.
+2. **P1 — Cobertura exploratoria incompleta:** la carga pública fue comprobada, pero no las secuencias de combate en esta sesión.
+3. **P1 — Evidencia histórica no fechada de forma operativa:** las capturas están versionadas, pero deben etiquetarse con commit, viewport y herramienta de captura para ser plenamente reproducibles.
+4. **P2 — Historial local del ZIP ausente:** el ZIP no incluía `.git`; el commit y tag de esta entrega se crean sobre el clon público, no sobre la historia del ZIP.
+
+Propuestas: añadir un lockfile, documentar una ruta reproducible de instalación autorizada, incluir el ejecutor de pruebas en el entorno CI, y automatizar capturas por viewport. Ninguna propuesta se implementa en OT-01.
+
+### 12.6 Arranque exacto
+
+Con dependencias instaladas por un responsable autorizado del proyecto:
+
+```bash
+npm install
+npm run dev
+# abrir http://localhost:3000
+```
+
+La instalación anterior **no se ejecutó en esta auditoría** porque OT-01 prohíbe instalar dependencias. Para el despliegue público, abrir `https://pactoensangre.pages.dev/`.

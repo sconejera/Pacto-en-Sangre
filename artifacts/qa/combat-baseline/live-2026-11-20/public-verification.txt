@@ -1,0 +1,11 @@
+OT-01 / verificación pública 2026-11-20
+Repositorio: https://github.com/sconejera/Pacto-en-Sangre/tree/main
+Despliegue: https://pactoensangre.pages.dev/
+HEAD local: 7850d7180fd9c59b0e0c29af4c9519fcf17f4595
+URL probada: https://pactoensangre.pages.dev/?autostart=1
+Título: FIRMADO EN SANGRE — Beat 'Em Up 2D Urbano Chileno
+Estado DOM observado por consola: body[data-state] = playing
+Canvas observado: 960x540, client 1278x718
+HUD observado: MARCIANEKE / x3 / HP 56/100 / 0 PTS / REC 0 · 00:30
+Consola: sin salida durante browser_console_view; consulta de estado sin excepción
+Limitación: no se realizó una secuencia completa de combate ni se cambió viewport a 1365x768/390x844 con la herramienta disponible.

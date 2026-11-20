@@ -24,3 +24,16 @@ Origen: **OT-01 v1.0** y **OT-02 v1.2**
 - **Sincronización pose-hitbox:** `renderer.ts` selecciona el slot `[0..3]` con `getAttackFrameSlot` y dibuja en `F1` la hitbox exacta construida con `buildAttackHitboxInto` solo durante la fase `active`, eliminando el solapamiento frontal por detrás de la espalda del jugador (`hitStartX = 12 px`).
 - **Pendiente de OT posterior (fuera de alcance OT-02):** Alinear `README.md` y `metadata.json` si conservan títulos previos, y resolver especiales multi-tick y `attackCooldown` de disparos/drenajes enemigos.
 - **Registro OT-03 (Reacción al daño del jugador):** Al entrar en `hurt`, `knockdown`, `ko`, `getup` o `grabbedByEnemy` se reinicia `p.animTime = 0`, `hurt` dura 3 frames en pose `12` y 1 en `4` (`[12, 12, 12, 4]`, 10 fps), `grabbedByEnemy` fija la pose `12`, y el gancho DEV usa `import.meta.env.MODE !== 'production'`.
+
+
+---
+
+## 3. Registro de auditoría OT-01 — 2026-11-20
+
+- **Motor:** mantener el motor Canvas 2D propio existente; no migrar a Phaser ni reconstruir el juego.
+- **Estrategia:** profesionalizar el motor actual mediante auditorías reproducibles y cambios incrementales posteriores, nunca durante la línea base.
+- **Prioridad:** combate.
+- **Nombre comercial:** FIRMADO EN SANGRE.
+- **Restricción de esta línea base:** no se modifica código de producción, assets, configuración de build ni dependencias.
+- **Reproducibilidad:** el ZIP entregado no contiene `.git`, `node_modules` ni lockfile. El informe distingue los resultados históricos incluidos en el repositorio de los resultados reproducidos en esta sesión; los comandos bloqueados por dependencias se marcan `FALLA` o `NO VERIFICADO` y no se corrigen instalando paquetes.
+- **Fuente auditada:** `https://github.com/sconejera/Pacto-en-Sangre/tree/main`, commit `7850d71`; despliegue público `https://pactoensangre.pages.dev/`.
