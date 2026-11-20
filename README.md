@@ -72,6 +72,8 @@ Al conectar un mando Xbox (USB o Bluetooth) se auto-asignan los botones y aparec
 
 ### Móvil / Táctil
 - Joystick virtual y botones táctiles (`A`, `B`, `ESP`) disponibles automáticamente durante el combate en dispositivos móviles o pantallas táctiles.
+- El joystick y cada botón usan captura de puntero para liberar correctamente la entrada aunque el dedo salga del control antes de levantarlo.
+- Los controles respetan `safe-area-inset` para teléfonos con notch o barra de gestos.
 
 ---
 
@@ -79,6 +81,16 @@ Al conectar un mando Xbox (USB o Bluetooth) se auto-asignan los botones y aparec
 ### PASESITO
 
 Las armas fueron reemplazadas por un único power-up: **PASESITO**. Al tocar la bolsa magenta, esta desaparece del escenario y el personaje hace una acción breve de fuerza con destello, impacto y texto flotante. Durante 12 segundos, todos sus golpes causan 75% más daño; el jugador no sostiene ningún objeto.
+
+El sprite utilizado es `src/assets/images/powerup_dano_magenta.png` y el sonido de recogida es `src/assets/audio/pasesito_bing_bing.mp3`. La alerta de aparición se reproduce para los cinco jefes mediante `src/assets/audio/jefe_peligro.mp3`.
+
+### Carga y presentación
+
+- La música del título mantiene la selección aleatoria actual, pero la primera pista comienza a precargarse desde la pantalla `CARGANDO...`, antes de terminar la carga de los assets visuales.
+- La pista ya precargada se conserva al mostrar el título y se reintenta automáticamente cuando el navegador permite reproducir audio después del primer gesto del usuario.
+- El fondo de selección está optimizado en `public/assets/aistudio/seleccion_personajes_960.webp`.
+- El fondo y el logo del título utilizan versiones WebP optimizadas para reducir el tiempo de carga.
+- La pantalla de título permanece opaca con `CARGANDO...` hasta que las fuentes, el logo y el elenco decorativo están listos, evitando un flash de tipografía.
 
 ## Actualización de combate y comunicación visual
 
