@@ -1,0 +1,143 @@
+# FIRMADO EN SANGRE
+
+**Beat 'Em Up 2D Urbano Chileno** — Juego arcade de acción lateral en perspectiva 2.5D ambientado en Santiago de Chile, construido con React, TypeScript, HTML5 Canvas, Web Audio API y Vite. Funciona 100% del lado del cliente como aplicación web estática, sin dependencias de servidor ni claves de API.
+
+---
+
+## Historia
+
+El malvado **Devil Gonzalez** intenta someter a los cantantes chilenos a firmar el contrato, con el fin de obtener su alma y el permiso para convertirlos en androides sin mente y producir contenido barato basado en sexo y morbo.
+
+Desde las poblaciones hasta la torre corporativa, las calles fueron tomadas por su ejército de androides y hordas de **Papis Mickys**, **Tíos Renes** y **Troncos Bizarros**. **Bayron Fire**, **Marcianeke** y **Cris MJ** se niegan a vender su música y salen a destruir cada laboratorio de cera, cada set de transmisión y el trono mismo de Devil Gonzalez.
+
+**¡LA BATALLA COMIENZA!!!**
+
+---
+
+## Personajes Jugables y Ataques
+
+| Personaje | Arquetipo | Combo Principal (`J · J · J`) | Cadena de 3 Golpes | Ataque Especial (`J + K` / `Y` / `RB`) |
+| :--- | :--- | :--- | :--- | :--- |
+| **BAYRON FIRE** | El Tanque del Barrio *(Pesado)* | **Me Pongo Bonito** *(7 → 7 → 11)* | Derechazo de Bloque → Cruzado Rompe-Circuitos → Patada Sísmica | **Tuu Maldito** *(Onda expansiva de bajo, 14 de daño)* |
+| **MARCIANEKE** | El Todoterreno *(Equilibrado)* | **MARCIANEKEE** *(6 → 6 → 10)* | Jab Galáctico → Gancho Urbano → Patada Sónica | **Que saben de Corte** *(Rayos cian, 2 impactos de 7)* |
+| **CRIS MJ** | El Más Que Suena *(Veloz)* | **Flow Gata Only** *(5 → 5 → 9)* | Puño Relámpago → Codazo Callejero → Patada Giratoria VIP | **Que Viva el Money** *(Ráfaga dorada, 3 impactos 5 + 5 + 4)* |
+
+> **Nota:** El ataque especial consume `8 HP` únicamente si impacta al menos a un enemigo y nunca deja al jugador por debajo de `1 HP`.
+
+---
+
+## Niveles, Escenarios y Jefes
+
+1. **Nivel 1 — Población de Noche**
+   - **Jefe:** **EL TRONCO** *(El Licenciado Máximo del Codo)*
+2. **Nivel 2 — Feria Libre y Mercado**
+   - **Jefe:** **CARLITOS RUN** *(La Guagua)*
+3. **Nivel 3 — Metro Subterráneo**
+   - **Jefe:** **IVAN MARTINEZ** *(El Hombre de Cera)*
+4. **Nivel 4 — Disco Nocturna**
+   - **Jefe:** **EL JC QUE LE DICEN** *(El Patrón del Morbo)*
+5. **Nivel 5 — Torre de Devil Gonzalez**
+   - **Jefe Final:** **DEVIL GONZALEZ** *(El Amo del Contrato y los Androides)*
+- **Etapa Bonus (tras Nivel 2 y Nivel 4) — Cancha de la Pobla:** Rompe cajones, barriles y parlantes en una multicancha nocturna de población chilena para recuperar energía y sumar puntos.
+
+### Hordas Enemigas
+- **Papis Mickys** (`Papi Micky Zombie`)
+- **Tíos Renes** (`Tío Rene Zombie`)
+- **Troncos Bizarros** (`Tronco Renacentista`, `Tronco Oficinista`, `Tronco Manager`)
+- **Zombies del Pantano** y **Cachorros**
+
+---
+
+## Controles
+
+### Teclado
+- **Moverse:** `Flechas` o `W A S D` *(doble toque izquierda/derecha para correr)*
+- **Golpe / Combo / Recoger arma o ítem:** `J`
+- **Salto:** `K` *(+ `J` en el aire = patada aérea)*
+- **Ataque Especial:** `J + K`
+- **Agarre cuerpo a cuerpo (caminar pegado al enemigo):** `J` rodillazo · `K` suplex · dirección opuesta para lanzar
+- **Pausa / Silenciar audio:** `P` / `M` *(o botón de bocina en pantalla)*
+
+### Mando Xbox / Gamepad (Detección Automática)
+Al conectar un mando Xbox (USB o Bluetooth) se auto-asignan los botones y aparece el aviso de conexión en pantalla:
+- **Moverse:** Stick izquierdo o **Cruceta (D-Pad)** *(compatible con botones estándar, ejes y POV hat; doble toque horizontal = correr)*
+- **Golpe / Combo / Confirmar:** `A` o `X`
+- **Salto / Volver en menús:** `B`
+- **Ataque Especial:** `Y`, `LB`, `RB` o `A + B`
+- **Correr rápido:** `LT` o `RT` + dirección
+- **Pausa / Silenciar:** `Menu` *(Start)* / `View` *(Back)*
+
+### Móvil / Táctil
+- Joystick virtual y botones táctiles (`A`, `B`, `ESP`) disponibles automáticamente durante el combate en dispositivos móviles o pantallas táctiles.
+
+---
+
+## Estructura del Proyecto
+
+```text
+├── index.html                  # Entrada HTML y metadatos
+├── package.json                # Scripts y dependencias
+├── vite.config.ts              # Configuración Vite y copia de assets estáticos
+├── public/                     # Sprites, audios, efectos y fuentes estáticas
+└── src/
+    ├── App.tsx                 # Contenedor raíz React
+    ├── main.tsx                # Punto de entrada React
+    ├── index.css               # Estilos globales Tailwind CSS y estética arcade
+    ├── assets/images/          # Fondos pixel art, objetos y retratos
+    ├── components/
+    │   ├── GameShell.tsx       # UI arcade, menús, HUD, modales y viñetas
+    │   ├── SpritePreview.tsx   # Vista previa de personajes en selección y victoria
+    │   ├── TitleCastBackdrop.tsx # Composición animada del elenco en portada
+    │   └── TouchControls.tsx   # Controles táctiles en pantalla
+    └── game/
+        ├── types.ts            # Tipos e interfaces del motor y entidades
+        ├── data.ts             # Personajes, combos, especiales, jefes, historia y niveles
+        ├── rules.ts            # Reglas puras 2.5D, hitboxes, IA, mando y físicas
+        ├── rules.test.ts       # Pruebas unitarias (node:test)
+        ├── sprites.ts          # Hojas de sprites 4x4 y animaciones de héroes
+        ├── worldSprites.ts     # Carga, recorte y limpieza de fondos y sprites
+        ├── renderer.ts         # Renderizador Canvas 2D con ordenamiento Z y efectos
+        ├── audio.ts            # Motor Web Audio API (música dinámica + SFX)
+        └── engine.ts           # Bucle principal a paso fijo (60 Hz) e inputs
+```
+
+---
+
+## Requisitos y Comandos
+
+Requisitos: **Node.js 20+** y **npm**.
+
+```bash
+# 1. Instalar dependencias
+npm install
+
+# 2. Ejecutar servidor de desarrollo (puerto 3000)
+npm run dev
+
+# 3. Verificar tipado TypeScript
+npm run lint
+
+# 4. Ejecutar pruebas unitarias de reglas, sprites y controles
+npx tsx --test src/game/rules.test.ts
+
+# 5. Compilar sitio estático para producción (salida en dist/)
+npm run build
+
+# 6. Previsualizar compilación de producción localmente
+npm run preview
+```
+
+---
+
+## Despliegue Estático (Cloudflare Pages)
+
+El proyecto genera un sitio 100% estático en la carpeta `dist/` sin requerir variables de entorno ni backend:
+
+- **Build command:** `npm run build`
+- **Build output directory:** `dist`
+
+---
+
+## Créditos
+
+Ideado y desarrollado por **Scone L@bs**.
