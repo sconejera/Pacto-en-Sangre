@@ -52,7 +52,7 @@ Desde las poblaciones hasta la torre corporativa, las calles fueron tomadas por 
 
 ### Teclado
 - **Moverse:** `Flechas` o `W A S D` *(doble toque izquierda/derecha para correr)*
-- **Golpe / Combo / Recoger arma o ítem:** `J`
+- **Golpe / Combo / Recoger ítem:** `J`
 - **Combo rápido:** `J · J · J`
 - **Golpe pesado con derribo:** `J · J · pausa · J`
 - **Remate que lanza:** `J · J · K`
@@ -74,6 +74,11 @@ Al conectar un mando Xbox (USB o Bluetooth) se auto-asignan los botones y aparec
 - Joystick virtual y botones táctiles (`A`, `B`, `ESP`) disponibles automáticamente durante el combate en dispositivos móviles o pantallas táctiles.
 
 ---
+
+
+### PASESITO
+
+Las armas fueron reemplazadas por un único power-up: **PASESITO**. Al tocar la bolsa magenta, esta desaparece del escenario y el personaje hace una acción breve de fuerza con destello, impacto y texto flotante. Durante 12 segundos, todos sus golpes causan 75% más daño; el jugador no sostiene ningún objeto.
 
 ## Actualización de combate y comunicación visual
 

@@ -57,8 +57,27 @@ export const TouchControls = memo(function TouchControls({
     onJoystick(0, 0);
   };
 
+  const handleButtonDown = (
+    e: ReactPointerEvent<HTMLButtonElement>,
+    btn: 'A' | 'B' | 'ESP',
+  ) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    onButton(btn, true);
+  };
+
+  const handleButtonUp = (
+    e: ReactPointerEvent<HTMLButtonElement>,
+    btn: 'A' | 'B' | 'ESP',
+  ) => {
+    onButton(btn, false);
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+  };
+
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex items-end justify-between px-4 pb-4 lg:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 flex items-end justify-between pl-[calc(1rem+env(safe-area-inset-left))] pr-[calc(1rem+env(safe-area-inset-right))] pb-[calc(1rem+env(safe-area-inset-bottom))] lg:hidden">
       {/* Virtual Joystick */}
       <div
         ref={joyRef}
@@ -80,12 +99,9 @@ export const TouchControls = memo(function TouchControls({
       <div className="pointer-events-auto flex items-end gap-3">
         <button
           type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            onButton('ESP', true);
-          }}
-          onPointerUp={() => onButton('ESP', false)}
-          onPointerCancel={() => onButton('ESP', false)}
+          onPointerDown={(e) => handleButtonDown(e, 'ESP')}
+          onPointerUp={(e) => handleButtonUp(e, 'ESP')}
+          onPointerCancel={(e) => handleButtonUp(e, 'ESP')}
           className="flex h-12 w-12 touch-none items-center justify-center rounded-full border-2 border-[#FFD23F] bg-[#1A0B2E]/90 text-xs font-bold text-[#FFD23F] active:scale-95"
           aria-label="Especial"
         >
@@ -93,12 +109,9 @@ export const TouchControls = memo(function TouchControls({
         </button>
         <button
           type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            onButton('B', true);
-          }}
-          onPointerUp={() => onButton('B', false)}
-          onPointerCancel={() => onButton('B', false)}
+          onPointerDown={(e) => handleButtonDown(e, 'B')}
+          onPointerUp={(e) => handleButtonUp(e, 'B')}
+          onPointerCancel={(e) => handleButtonUp(e, 'B')}
           className="flex h-16 w-16 touch-none items-center justify-center rounded-full border-2 border-[#19E3FF] bg-[#0B0F1E]/85 text-lg font-bold text-[#19E3FF] active:scale-95"
           aria-label="Saltar (B)"
         >
@@ -106,12 +119,9 @@ export const TouchControls = memo(function TouchControls({
         </button>
         <button
           type="button"
-          onPointerDown={(e) => {
-            e.preventDefault();
-            onButton('A', true);
-          }}
-          onPointerUp={() => onButton('A', false)}
-          onPointerCancel={() => onButton('A', false)}
+          onPointerDown={(e) => handleButtonDown(e, 'A')}
+          onPointerUp={(e) => handleButtonUp(e, 'A')}
+          onPointerCancel={(e) => handleButtonUp(e, 'A')}
           className="flex h-18 w-18 touch-none items-center justify-center rounded-full border-2 border-[#FF2E88] bg-[#C1121F]/85 text-xl font-bold text-white active:scale-95"
           aria-label="Atacar (A)"
         >

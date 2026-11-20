@@ -104,7 +104,7 @@ export type EnemyType =
   | 'fan'
   | 'manager';
 
-export type WeaponType = 'tubo' | 'bate' | 'botella' | 'fierro';
+export type PowerUpType = 'pasesito';
 
 export type ItemType =
   | 'empanada'
@@ -113,7 +113,7 @@ export type ItemType =
   | 'billete'
   | 'disco'
   | '1up'
-  | WeaponType;
+  | PowerUpType;
 
 export type BreakableType =
   | 'barril'
@@ -249,8 +249,8 @@ export interface PlayerEntity {
   attackId: number;
   attackTick: number;
   attackHitSet: Set<number>;
-  weapon: WeaponType | null;
-  weaponUses: number;
+  powerUp: PowerUpType | null;
+  powerUpTimer: number;
   grabTargetId: number | null;
   grabPushTimer: number;
   grabPummels: number;
@@ -483,8 +483,8 @@ export interface HudSnapshot {
   levelNumber: number;
   levelName: string;
   levelTimer: number;
-  weapon: WeaponType | null;
-  weaponUses: number;
+  powerUp: PowerUpType | null;
+  powerUpTimer: number;
   lastTargetName: string | null;
   lastTargetHp: number;
   lastTargetMaxHp: number;

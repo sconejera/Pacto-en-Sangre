@@ -694,19 +694,41 @@ const TitleFireTrails = memo(function TitleFireTrails({
 export const TitleCastBackdrop = memo(function TitleCastBackdrop({
   reduceEffects,
   getBeatLevel = NOOP_BEAT,
+  onReady,
 }: {
   reduceEffects: boolean;
   getBeatLevel?: () => number;
+  onReady?: () => void;
 }) {
   const [cutouts, setCutouts] = useState<Record<string, string> | null>(null);
 
   useEffect(() => {
     let active = true;
-    loadAllCutouts().then((result) => {
-      if (active) setCutouts(result);
-    });
+    const load = () => {
+      loadAllCutouts().then((result) => {
+        if (active) {
+          setCutouts(result);
+          onReady?.();
+        }
+      }).catch(() => {
+        if (active) onReady?.();
+      });
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const usesIdleCallback = typeof idleWindow.requestIdleCallback === 'function';
+    const idleHandle = usesIdleCallback
+      ? idleWindow.requestIdleCallback(load, { timeout: 1200 })
+      : window.setTimeout(load, 120);
     return () => {
       active = false;
+      if (usesIdleCallback && typeof idleWindow.cancelIdleCallback === 'function') {
+        idleWindow.cancelIdleCallback(idleHandle as number);
+      } else {
+        window.clearTimeout(idleHandle as number);
+      }
     };
   }, []);
 

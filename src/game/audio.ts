@@ -4,6 +4,8 @@ export const SFX_PATHS = {
   puno: '/assets/audio/puno.mp3',
   enemigos: '/assets/audio/enemigos.mp3',
   jefe: '/assets/audio/jefe.mp3',
+  jefePeligro: '/src/assets/audio/jefe_peligro.mp3',
+  pasesito: '/src/assets/audio/pasesito_bing_bing.mp3',
   ruuun: '/assets/aistudio/RUUUN_e92d817e.mp3',
   matorun: '/assets/aistudio/MATORUN_5c2650ec.mp3',
 } as const;
@@ -24,6 +26,8 @@ const SFX_VOLUME: Record<SfxKey, number> = {
   puno: 0.72,
   enemigos: 0.65,
   jefe: 0.72,
+  jefePeligro: 0.95,
+  pasesito: 0.9,
   ruuun: 0.96,
   matorun: 0.96,
 };
@@ -642,6 +646,7 @@ export class GameAudio {
 
   public playBossDangerWarning(): void {
     this.unlock();
+    this.playClip('jefePeligro');
     for (let i = 0; i < 3; i++) {
       const base = i * 0.42;
       this.playTone(360, 740, 0.19, 'sawtooth', 0.26, base);
@@ -671,10 +676,9 @@ export class GameAudio {
     });
   }
 
-  public playPickupWeapon(): void {
+  public playPickupPowerUp(): void {
     this.unlock();
-    this.playTone(210, 140, 0.09, 'sawtooth', 0.22, 0);
-    this.playTone(620, 420, 0.07, 'square', 0.15, 0.03);
+    this.playClip('pasesito');
   }
 
   public destroy(): void {

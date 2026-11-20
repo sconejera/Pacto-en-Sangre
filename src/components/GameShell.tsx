@@ -5,7 +5,6 @@ import {
   LOGICAL_HEIGHT,
   LOGICAL_WIDTH,
   STORY,
-  WEAPON_STATS,
 } from '../game/data';
 import { NoFirmoEngine, type GamepadUiAction } from '../game/engine';
 import { formatTimeMMSS } from '../game/rules';
@@ -34,8 +33,8 @@ const INITIAL_HUD: HudSnapshot = {
   levelNumber: 1,
   levelName: 'POBLACIÓN DE NOCHE',
   levelTimer: 0,
-  weapon: null,
-  weaponUses: 0,
+  powerUp: null,
+  powerUpTimer: 0,
   lastTargetName: null,
   lastTargetHp: 0,
   lastTargetMaxHp: 0,
@@ -119,8 +118,10 @@ const GamepadIcon = memo(function GamepadIcon() {
 
 const PixelTitleLogo = memo(function PixelTitleLogo({
   getBeatLevel,
+  onReady,
 }: {
   getBeatLevel: () => number;
+  onReady?: () => void;
 }) {
   const logoCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const pulseWrapRef = useRef<HTMLDivElement | null>(null);
@@ -145,8 +146,11 @@ const PixelTitleLogo = memo(function PixelTitleLogo({
           ctx.drawImage(processed, 0, 0);
         }
         setLoaded(true);
+        onReady?.();
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) onReady?.();
+      });
     return () => {
       active = false;
     };
@@ -229,8 +233,30 @@ export function GameShell() {
   const [activeModal, setActiveModal] = useState<MenuModal>(null);
   const [typedLength, setTypedLength] = useState(0);
   const [gamepadNotice, setGamepadNotice] = useState<'connected' | 'disconnected' | null>(null);
+  const [fontsReady, setFontsReady] = useState(false);
+  const [titleLogoReady, setTitleLogoReady] = useState(false);
+  const [titleCastReady, setTitleCastReady] = useState(false);
   const prevGamepadConnectedRef = useRef<boolean | null>(null);
   const uiNavHandlerRef = useRef<(action: GamepadUiAction) => void>(() => {});
+
+  const markTitleLogoReady = useCallback(() => setTitleLogoReady(true), []);
+  const markTitleCastReady = useCallback(() => setTitleCastReady(true), []);
+
+  useEffect(() => {
+    let active = true;
+    const fontSet = document.fonts;
+    void Promise.all([
+      fontSet.load('400 16px "Silkscreen"'),
+      fontSet.load('700 16px "Silkscreen"'),
+      fontSet.load('400 16px "Press Start 2P"'),
+      fontSet.load('400 16px "Bungee"'),
+    ]).finally(() => {
+      if (active) setFontsReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const prev = prevGamepadConnectedRef.current;
@@ -560,10 +586,27 @@ export function GameShell() {
           </div>
         )}
 
+        {(hud.screen === 'CARGA' || hud.screen === 'MENÚ') &&
+          (!fontsReady || !titleLogoReady || !titleCastReady) && (
+          <div
+            className="absolute inset-0 z-[100] flex items-center justify-center bg-[#0B0F1E]"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="arcade-panel px-6 py-5 text-center">
+              <div className="arcade-outline text-lg font-black text-[#FFD23F]">CARGANDO...</div>
+            </div>
+          </div>
+        )}
+
         {/* TITLE SCREEN (MENÚ) — 3 foreground heroes, 4 shadowed stage bosses, giant Stage 5 Overlord behind, top logo & lower arcade menu dock */}
         {hud.screen === 'MENÚ' && (
           <section className="absolute inset-0 z-20 flex flex-col items-center justify-between">
-            <TitleCastBackdrop reduceEffects={hud.reduceEffects} getBeatLevel={getBeatLevel} />
+            <TitleCastBackdrop
+              reduceEffects={hud.reduceEffects}
+              getBeatLevel={getBeatLevel}
+              onReady={markTitleCastReady}
+            />
 
             {/* Desktop/tablet top-left Xbox/Gamepad Connected Box */}
             {hud.gamepadConnected && (
@@ -618,9 +661,9 @@ export function GameShell() {
 
             {/* Top Header: Beat-pulsing Logo + Tagline framed above Boss 5's face (pointer-events-none so top-right mute stays clickable) */}
             <div className="pointer-events-none relative z-20 flex w-full shrink-0 flex-col items-center px-3 pt-2 sm:px-6 sm:pt-3">
-              <PixelTitleLogo getBeatLevel={getBeatLevel} />
-              <p className="arcade-outline-sm mt-1 text-center text-[9px] font-bold tracking-[0.18em] text-[#19E3FF] sm:mt-1.5 sm:text-xs">
-                CHILE · MÚSICA URBANA · CONTRA DEVIL GONZALEZ
+              <PixelTitleLogo getBeatLevel={getBeatLevel} onReady={markTitleLogoReady} />
+              <p className="arcade-outline-sm mt-1 text-center text-[11px] font-bold tracking-[0.18em] text-[#19E3FF] sm:mt-1.5 sm:text-sm">
+                Beat 'Em Up 2D Urbano Chileno
               </p>
             </div>
 
@@ -1145,7 +1188,7 @@ export function GameShell() {
           <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between p-1.5 sm:p-4">
             {/* Top Bar */}
             <div className="flex items-start justify-between gap-1.5 sm:gap-2">
-              {/* Top-left: Portrait, HP, Lives, Weapon, Last Enemy Hit */}
+              {/* Top-left: Portrait, HP, Lives, PASESITO, Last Enemy Hit */}
               <div className="flex flex-col gap-1">
                 <div className="arcade-panel flex items-center gap-1.5 p-1 sm:gap-2 sm:p-1.5">
                   <div className="hidden sm:block">
@@ -1185,9 +1228,9 @@ export function GameShell() {
                       <span>
                         HP {hud.hp}/{hud.maxHp}
                       </span>
-                      {hud.weapon && (
-                        <span className="text-[#FFD23F]">
-                          {WEAPON_STATS[hud.weapon].label} ({hud.weaponUses})
+                      {hud.powerUp && (
+                        <span className="text-[#E83BFF]">
+                          PASESITO ×{Math.ceil(hud.powerUpTimer)}s
                         </span>
                       )}
                     </div>

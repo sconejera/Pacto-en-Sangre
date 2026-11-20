@@ -48,7 +48,7 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 import { MUSIC_TRACKS, SFX_PATHS } from './audio';
-import { CHARACTERS, LEVELS, BOSSES, ENEMY_BASE_STATS, STORY, WALK_MIN_Y, WALK_MAX_Y } from './data';
+import { CHARACTERS, LEVELS, BOSSES, ENEMY_BASE_STATS, POWERUP_STATS, STORY, WALK_MIN_Y, WALK_MAX_Y } from './data';
 import { SPRITE_MAP, validateSpriteMapEntry } from './sprites';
 import {
   BOSS1_SHEET_SPEC,
@@ -120,7 +120,9 @@ test('character stats & combo damages match spec', () => {
   assert.deepEqual(CHARACTERS.crismj.comboDamage, [5, 5, 9]);
   assert.equal(CHARACTERS.crismj.name, 'CRIS MJ');
   assert.equal(getPlayerAttackDamage('bayron', 3, null), 11);
-  assert.equal(getPlayerAttackDamage('crismj', 1, 'bate'), 16);
+  assert.equal(getPlayerAttackDamage('crismj', 1, null), CHARACTERS.crismj.comboDamage[0]);
+  assert.equal(POWERUP_STATS.pasesito.label, 'PASESITO');
+  assert.equal(getPlayerAttackDamage('bayron', 1, 'pasesito'), Math.round(7 * 1.75));
 });
 
 test('3 hits within 2 seconds triggers knockdown and resets recent timestamps', () => {
@@ -319,10 +321,7 @@ test('all 6 breakables, 10 pickups, title backdrop/logo, character select assets
     'billete',
     'disco',
     '1up',
-    'tubo',
-    'bate',
-    'botella',
-    'fierro',
+    'pasesito',
   ] as const;
   for (const k of pickupKeys) {
     const spec = PICKUP_SPRITE_SPECS[k];
@@ -361,9 +360,11 @@ test('all 6 breakables, 10 pickups, title backdrop/logo, character select assets
     }
   }
 
-  assert.equal(Object.keys(SFX_PATHS).length, 5);
+  assert.equal(Object.keys(SFX_PATHS).length, 7);
   assert.equal(SFX_PATHS.ruuun, '/assets/aistudio/RUUUN_e92d817e.mp3');
   assert.equal(SFX_PATHS.matorun, '/assets/aistudio/MATORUN_5c2650ec.mp3');
+  assert.equal(SFX_PATHS.pasesito, '/src/assets/audio/pasesito_bing_bing.mp3');
+  assert.equal(SFX_PATHS.jefePeligro, '/src/assets/audio/jefe_peligro.mp3');
   for (const [key, sfxPath] of Object.entries(SFX_PATHS)) {
     assert.ok(fs.existsSync(resolvePublicOrSrcPath(sfxPath)), `missing SFX ${key}: ${sfxPath}`);
   }

@@ -13,7 +13,7 @@ import {
   STORY,
   WALK_MAX_Y,
   WALK_MIN_Y,
-  WEAPON_STATS,
+  POWERUP_STATS,
 } from './data';
 import { renderWorld, type RenderWorldState } from './renderer';
 import {
@@ -67,7 +67,7 @@ import type {
   PlayerActionState,
   PlayerEntity,
   ProjectileEntity,
-  WeaponType,
+  PowerUpType,
 } from './types';
 
 const STORAGE_KEY_HIGHSCORE = 'no_firmo_highscore_v1';
@@ -136,7 +136,6 @@ export class NoFirmoEngine {
     boss5Frames: [],
     breakables: {},
     pickups: {},
-    heldWeapons: {},
     backgrounds: {},
     backgroundsAlt: {},
     bonusCourtBg: null,
@@ -331,6 +330,12 @@ export class NoFirmoEngine {
 
     this.bindEvents();
     this.audio.preload();
+    // Start fetching the random title track immediately instead of waiting for
+    // every visual asset to finish. Browsers may block autoplay until a user
+    // gesture, but unlock() will retry the already-buffering track instantly.
+    if (!autostart) {
+      this.audio.resumeMusic();
+    }
     void this.initAssets(autostart);
 
     if (import.meta.env.MODE !== 'production') {
@@ -348,7 +353,8 @@ export class NoFirmoEngine {
             frame: number | null;
           }[];
           spawnTestBreakable: (dx: number) => number | null;
-          equipTestWeapon: (weapon: WeaponType) => boolean;
+          spawnTestPowerUp: () => boolean;
+          equipTestPowerUp: () => boolean;
         };
       };
       win.__NF_DEBUG__ = {
@@ -373,11 +379,16 @@ export class NoFirmoEngine {
           });
           return id;
         },
-        equipTestWeapon: (weapon: WeaponType) => {
+        spawnTestPowerUp: () => {
           const p = this.players[0];
-          if (!p || !WEAPON_STATS[weapon]) return false;
-          p.weapon = weapon;
-          p.weaponUses = WEAPON_STATS[weapon].uses;
+          if (!p) return false;
+          this.spawnPickup('pasesito', p.x + 80, p.y);
+          return true;
+        },
+        equipTestPowerUp: () => {
+          const p = this.players[0];
+          if (!p) return false;
+          this.activatePowerUp(p, 'pasesito');
           return true;
         },
       };
@@ -405,7 +416,9 @@ export class NoFirmoEngine {
     } else {
       this.titleBackdropDrawn = false;
       this.setScreen('MENÚ');
-      this.audio.playRandomTrack();
+      // Keep the track selected during constructor-time preloading. This avoids
+      // replacing a track that may already be buffered while the title appears.
+      this.audio.resumeMusic();
     }
     this.emitHud(true);
   }
@@ -740,8 +753,8 @@ export class NoFirmoEngine {
       attackId: 0,
       attackTick: 0,
       attackHitSet: new Set(),
-      weapon: null,
-      weaponUses: 0,
+      powerUp: null,
+      powerUpTimer: 0,
       grabTargetId: null,
       grabPushTimer: 0,
       grabPummels: 0,
@@ -870,7 +883,7 @@ export class NoFirmoEngine {
       { id: this.nextEntityId++, kind: 'cajon', x: 340, y: 462, hp: 2, maxHp: 2, hitFlashTimer: 0, guaranteedDrop: 'empanada', broken: false },
       { id: this.nextEntityId++, kind: 'cajon', x: 480, y: 488, hp: 2, maxHp: 2, hitFlashTimer: 0, guaranteedDrop: 'sandwich', broken: false },
       { id: this.nextEntityId++, kind: 'cajon', x: 620, y: 462, hp: 2, maxHp: 2, hitFlashTimer: 0, guaranteedDrop: 'energia', broken: false },
-      { id: this.nextEntityId++, kind: 'barril', x: 750, y: 504, hp: 2, maxHp: 2, hitFlashTimer: 0, guaranteedDrop: 'bate', broken: false },
+      { id: this.nextEntityId++, kind: 'barril', x: 750, y: 504, hp: 2, maxHp: 2, hitFlashTimer: 0, guaranteedDrop: 'pasesito', broken: false },
       { id: this.nextEntityId++, kind: 'parlante', x: 830, y: 458, hp: 2, maxHp: 2, hitFlashTimer: 0, guaranteedDrop: 'disco', broken: false },
     ];
     this.bannerText = null;
@@ -1523,10 +1536,8 @@ export class NoFirmoEngine {
       } else {
         const step: 1 | 2 | 3 = p.state === 'attack1' ? 1 : p.state === 'attack2' ? 2 : 3;
         if (phase === 'active') {
-          const dmg = getPlayerAttackDamage(p.charId, step, p.weapon);
-          const extraReach =
-            (step === 3 ? stats.kickExtraReach : 0) +
-            (p.weapon ? WEAPON_STATS[p.weapon].reachBonus : 0);
+          const dmg = getPlayerAttackDamage(p.charId, step, p.powerUp);
+          const extraReach = step === 3 ? stats.kickExtraReach : 0;
           buildAttackHitboxInto(this.atkBoxScratch, p.x, p.z, p.facing, atkData, extraReach);
           this.checkPlayerMeleeHits(p, dmg, this.atkBoxScratch, step === 3, false);
         }
@@ -1619,33 +1630,28 @@ export class NoFirmoEngine {
     const isRunning = this.runActiveDir !== 0 && mx === this.runActiveDir;
     if (mx === 0) this.runActiveDir = 0;
 
-    // Pick up nearby weapon/item with A, or start attack
+    // Recoger ítem cercano o iniciar ataque
     if (bufferedAttack) {
       this.attackBufferTimer = 0;
-      const pickedUpWeapon = this.tryPickupWeaponOnGround(p);
-      if (!pickedUpWeapon) {
-        if (isRunning) {
-          p.state = 'shoulder';
-          p.stateTimer = 0.4;
-          p.animTime = 0;
-          p.vx = p.facing * (stats.runSpeedX * 1.25);
-          p.vy = 0;
-          p.attackId++;
-          p.attackHitSet.clear();
-          this.spawnDustBurst(p.x - p.facing * 12, p.y, 4);
-          return;
-        }
-        const nextStep: 1 | 2 | 3 =
-          p.comboWindowTimer > 0 && p.comboStep === 1
-            ? 2
-            : p.comboWindowTimer > 0 && p.comboStep === 2
-            ? 3
-            : 1;
-        this.startComboAttack(p, nextStep);
+      if (isRunning) {
+        p.state = 'shoulder';
+        p.stateTimer = 0.4;
+        p.animTime = 0;
+        p.vx = p.facing * (stats.runSpeedX * 1.25);
+        p.vy = 0;
+        p.attackId++;
+        p.attackHitSet.clear();
+        this.spawnDustBurst(p.x - p.facing * 12, p.y, 4);
         return;
       }
-      // La recogida consume el ataque, pero no interrumpe la integración de
-      // velocidad de este frame: así el personaje no da un tirón al tomarla.
+      const nextStep: 1 | 2 | 3 =
+        p.comboWindowTimer > 0 && p.comboStep === 1
+          ? 2
+          : p.comboWindowTimer > 0 && p.comboStep === 2
+          ? 3
+          : 1;
+      this.startComboAttack(p, nextStep);
+      return;
     }
 
     // Jump with B
@@ -2002,12 +2008,6 @@ export class NoFirmoEngine {
       }
     }
 
-    if (landedOnTarget && p.weapon) {
-      p.weaponUses -= 1;
-      if (p.weaponUses <= 0) {
-        p.weapon = null;
-      }
-    }
   }
 
   private damageEnemy(
@@ -2931,10 +2931,6 @@ export class NoFirmoEngine {
         p.stateTimer = 0.8;
         p.invulnTimer = 1.6;
         p.vz = 190;
-        if (p.weapon) {
-          this.spawnPickup(p.weapon, p.x + 25, p.y);
-          p.weapon = null;
-        }
       }
       return;
     }
@@ -2947,10 +2943,6 @@ export class NoFirmoEngine {
       p.stateTimer = 0.8;
       p.vx = dir * 180;
       p.vz = 150;
-      if (p.weapon) {
-        this.spawnPickup(p.weapon, p.x + 25, p.y);
-        p.weapon = null;
-      }
     } else if (p.state !== 'grabbedByEnemy') {
       // Reinicia animTime para que la pose de daño se vea desde el frame 0.
       p.state = 'hurt';
@@ -3040,11 +3032,8 @@ export class NoFirmoEngine {
           pk.vz = 0;
         }
       }
-      const isWeapon =
-        pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'fierro';
-      // Food & points auto-collect on overlap; weapons require Attack near weapon
+      // PASESITO y los consumibles se recogen automáticamente al contacto.
       if (
-        !isWeapon &&
         Math.abs(pk.x - p.x) < 34 &&
         Math.abs(pk.y - p.y) < 22 &&
         p.z < 30
@@ -3054,27 +3043,28 @@ export class NoFirmoEngine {
     }
   }
 
-  private tryPickupWeaponOnGround(p: PlayerEntity): boolean {
-    for (const pk of this.pickups) {
-      if (pk.collected) continue;
-      const isWeapon =
-        pk.type === 'tubo' || pk.type === 'bate' || pk.type === 'botella' || pk.type === 'fierro';
-      if (isWeapon && Math.abs(pk.x - p.x) < 48 && Math.abs(pk.y - p.y) < 26) {
-        const w = pk.type as WeaponType;
-        p.weapon = w;
-        p.weaponUses = WEAPON_STATS[w].uses;
-        pk.collected = true;
-        this.audio.playPickupWeapon();
-        this.spawnFloatingText(p.x, p.y, 100, WEAPON_STATS[w].label, PALETTE.yellow, 1.0);
-        return true;
-      }
-    }
-    return false;
+  private activatePowerUp(p: PlayerEntity, type: PowerUpType): void {
+    p.powerUp = type;
+    p.powerUpTimer = POWERUP_STATS[type].duration;
+    p.state = 'special';
+    p.stateTimer = 0.55;
+    p.vx = 0;
+    p.vy = 0;
+    p.squashX = 1.28;
+    p.squashY = 0.78;
+    this.audio.playPickupPowerUp();
+    this.spawnFloatingText(p.x, p.y, 108, POWERUP_STATS[type].label, POWERUP_STATS[type].color, 1.25);
+    this.spawnHitBurst(p.x, p.y, 32, POWERUP_STATS[type].color, 18);
+    this.whiteFlashTimer = Math.max(this.whiteFlashTimer, 0.16);
   }
 
   private collectItem(p: PlayerEntity, pk: PickupEntity): void {
     pk.collected = true;
-    const item = ITEM_STATS[pk.type as Exclude<ItemType, WeaponType>];
+    if (pk.type === 'pasesito') {
+      this.activatePowerUp(p, 'pasesito');
+      return;
+    }
+    const item = ITEM_STATS[pk.type as Exclude<ItemType, PowerUpType>];
     if (!item) return;
     if (item.extraLife) {
       this.audio.playPickup1Up();
@@ -3100,7 +3090,7 @@ export class NoFirmoEngine {
       if (b.guaranteedDrop) {
         this.spawnPickup(b.guaranteedDrop, b.x, b.y);
       } else if (Math.random() < 0.6) {
-        const pool: ItemType[] = ['empanada', 'billete', 'sandwich', 'tubo', 'energia'];
+        const pool: ItemType[] = ['empanada', 'billete', 'sandwich', 'pasesito', 'energia'];
         const chosen = pool[Math.floor(Math.random() * pool.length)];
         this.spawnPickup(chosen, b.x, b.y);
       }
@@ -3275,10 +3265,9 @@ export class NoFirmoEngine {
     this.bannerTimer = 2.2;
     this.dialogueSpeaker = def.name;
     this.dialogueText = `${def.preDialogueBoss} / ${CHARACTERS[p.charId].name}: "${def.preDialogueHero}"`;
+    this.audio.playBossDangerWarning();
     if (def.id === 2) {
       this.audio.playBoss2Appear();
-    } else {
-      this.audio.playBossDangerWarning();
     }
 
     this.setScreen('JEFE_INTRO');
@@ -3710,8 +3699,8 @@ export class NoFirmoEngine {
       prev.continueCountdown === continueCountdown &&
       prev.levelNumber === lvl.levelNumber &&
       prev.levelTimer === timerSec &&
-      prev.weapon === p.weapon &&
-      prev.weaponUses === p.weaponUses &&
+      prev.powerUp === p.powerUp &&
+      Math.ceil(prev.powerUpTimer) === Math.ceil(p.powerUpTimer) &&
       prev.lastTargetName === this.lastTargetName &&
       prev.lastTargetHp === lastTargetHp &&
       prev.bossName === bossName &&
@@ -3756,8 +3745,8 @@ export class NoFirmoEngine {
       levelNumber: lvl.levelNumber,
       levelName: lvl.name,
       levelTimer: timerSec,
-      weapon: p.weapon,
-      weaponUses: p.weaponUses,
+      powerUp: p.powerUp,
+      powerUpTimer: p.powerUpTimer,
       lastTargetName: this.lastTargetName,
       lastTargetHp,
       lastTargetMaxHp: this.lastTargetMaxHp,

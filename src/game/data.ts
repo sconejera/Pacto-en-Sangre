@@ -7,7 +7,7 @@ import type {
   EnemyType,
   ItemType,
   LevelDef,
-  WeaponType,
+  PowerUpType,
 } from './types';
 
 export const LOGICAL_WIDTH = 960;
@@ -245,18 +245,12 @@ export const LEVEL_SCALING: Record<1 | 2 | 3 | 4 | 5, { hpMul: number; dmgMul: n
   5: { hpMul: 1.7, dmgMul: 1.4 },
 };
 
-export const WEAPON_STATS: Record<
-  WeaponType,
-  { label: string; damage: number; uses: number; reachBonus: number; color: string }
-> = {
-  tubo: { label: 'TUBO', damage: 14, uses: 12, reachBonus: 14, color: '#94A3B8' },
-  bate: { label: 'BATE', damage: 16, uses: 10, reachBonus: 18, color: '#D97706' },
-  botella: { label: 'BOTELLA', damage: 8, uses: 3, reachBonus: 8, color: '#7CFF4F' },
-  fierro: { label: 'FIERRO', damage: 12, uses: 12, reachBonus: 20, color: '#A16207' },
+export const POWERUP_STATS: Record<PowerUpType, { label: string; damageMultiplier: number; duration: number; color: string }> = {
+  pasesito: { label: 'PASESITO', damageMultiplier: 1.75, duration: 12, color: '#E83BFF' },
 };
 
 export const ITEM_STATS: Record<
-  Exclude<ItemType, WeaponType>,
+  Exclude<ItemType, PowerUpType>,
   { label: string; heal: number; points: number; extraLife?: number; color: string }
 > = {
   empanada: { label: 'EMPANADA', heal: 25, points: 100, color: '#F59E0B' },
@@ -456,13 +450,13 @@ export const LEVELS: LevelDef[] = [
       { x: 640, y: 458, kind: 'cajon', guaranteedDrop: 'billete' },
       { x: 1450, y: 494, kind: 'barril' },
       { x: 2350, y: 452, kind: 'bolsa', guaranteedDrop: 'empanada' },
-      { x: 3250, y: 468, kind: 'cajon', guaranteedDrop: 'tubo' },
+      { x: 3250, y: 468, kind: 'cajon', guaranteedDrop: 'pasesito' },
       { x: 4100, y: 508, kind: 'tacho' },
       { x: 4750, y: 448, kind: 'barril', guaranteedDrop: 'sandwich' },
       { x: 5750, y: 482, kind: 'carrito' },
       { x: 6450, y: 458, kind: 'cajon', guaranteedDrop: 'empanada' },
       { x: 7400, y: 504, kind: 'parlante' },
-      { x: 8050, y: 452, kind: 'cajon', guaranteedDrop: 'bate' },
+      { x: 8050, y: 452, kind: 'cajon', guaranteedDrop: 'pasesito' },
       { x: 8550, y: 498, kind: 'barril', guaranteedDrop: 'empanada' },
     ],
   },
@@ -553,12 +547,12 @@ export const LEVELS: LevelDef[] = [
     breakables: [
       { x: 750, y: 456, kind: 'cajon', guaranteedDrop: 'empanada' },
       { x: 1750, y: 494, kind: 'carrito' },
-      { x: 2950, y: 452, kind: 'cajon', guaranteedDrop: 'botella' },
+      { x: 2950, y: 452, kind: 'cajon', guaranteedDrop: 'pasesito' },
       { x: 4650, y: 500, kind: 'tacho', guaranteedDrop: 'billete' },
       { x: 5400, y: 448, kind: 'cajon', guaranteedDrop: 'energia' },
       { x: 6600, y: 486, kind: 'carrito' },
       { x: 8100, y: 460, kind: 'cajon', guaranteedDrop: 'sandwich' },
-      { x: 8800, y: 474, kind: 'tacho', guaranteedDrop: 'fierro' },
+      { x: 8800, y: 474, kind: 'tacho', guaranteedDrop: 'pasesito' },
       { x: 9450, y: 502, kind: 'cajon', guaranteedDrop: 'empanada' },
     ],
   },
@@ -658,11 +652,11 @@ export const LEVELS: LevelDef[] = [
       },
     ],
     breakables: [
-      { x: 750, y: 464, kind: 'tacho', guaranteedDrop: 'tubo' },
+      { x: 750, y: 464, kind: 'tacho', guaranteedDrop: 'pasesito' },
       { x: 1850, y: 452, kind: 'bolsa', guaranteedDrop: 'empanada' },
       { x: 3150, y: 498, kind: 'parlante', guaranteedDrop: 'billete' },
       { x: 4550, y: 458, kind: 'cajon', guaranteedDrop: 'sandwich' },
-      { x: 6050, y: 496, kind: 'tacho', guaranteedDrop: 'fierro' },
+      { x: 6050, y: 496, kind: 'tacho', guaranteedDrop: 'pasesito' },
       { x: 7650, y: 446, kind: 'bolsa', guaranteedDrop: '1up' },
       { x: 9250, y: 490, kind: 'cajon', guaranteedDrop: 'energia' },
       { x: 10400, y: 462, kind: 'tacho', guaranteedDrop: 'empanada' },
@@ -766,8 +760,8 @@ export const LEVELS: LevelDef[] = [
     ],
     breakables: [
       { x: 760, y: 450, kind: 'parlante', guaranteedDrop: 'empanada' },
-      { x: 1800, y: 500, kind: 'barril', guaranteedDrop: 'botella' },
-      { x: 3300, y: 458, kind: 'parlante', guaranteedDrop: 'bate' },
+      { x: 1800, y: 500, kind: 'barril', guaranteedDrop: 'pasesito' },
+      { x: 3300, y: 458, kind: 'parlante', guaranteedDrop: 'pasesito' },
       { x: 4900, y: 490, kind: 'cajon', guaranteedDrop: 'sandwich' },
       { x: 6600, y: 452, kind: 'tacho', guaranteedDrop: 'energia' },
       { x: 8400, y: 496, kind: 'parlante', guaranteedDrop: 'disco' },
@@ -886,12 +880,12 @@ export const LEVELS: LevelDef[] = [
     ],
     breakables: [
       { x: 760, y: 454, kind: 'parlante', guaranteedDrop: 'empanada' },
-      { x: 1750, y: 496, kind: 'cajon', guaranteedDrop: 'tubo' },
+      { x: 1750, y: 496, kind: 'cajon', guaranteedDrop: 'pasesito' },
       { x: 3150, y: 458, kind: 'parlante', guaranteedDrop: 'sandwich' },
-      { x: 4800, y: 490, kind: 'cajon', guaranteedDrop: 'fierro' },
+      { x: 4800, y: 490, kind: 'cajon', guaranteedDrop: 'pasesito' },
       { x: 6400, y: 452, kind: 'parlante', guaranteedDrop: 'energia' },
       { x: 8000, y: 496, kind: 'cajon', guaranteedDrop: '1up' },
-      { x: 9650, y: 462, kind: 'parlante', guaranteedDrop: 'bate' },
+      { x: 9650, y: 462, kind: 'parlante', guaranteedDrop: 'pasesito' },
       { x: 11250, y: 492, kind: 'cajon', guaranteedDrop: 'sandwich' },
       { x: 12350, y: 460, kind: 'parlante', guaranteedDrop: 'energia' },
     ],

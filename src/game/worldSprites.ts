@@ -1,5 +1,5 @@
 import { computeTitleBgCropLayout } from './rules';
-import type { BreakableType, EnemyType, ItemType, LevelDef, SpriteFrameBox, WeaponType } from './types';
+import type { BreakableType, EnemyType, ItemType, LevelDef, SpriteFrameBox } from './types';
 
 export type StageTheme = LevelDef['theme'];
 
@@ -46,7 +46,6 @@ export interface WorldAssets {
   boss5Frames: ProcessedPixelSprite[];
   breakables: Partial<Record<BreakableType, ProcessedPixelSprite>>;
   pickups: Partial<Record<ItemType, ProcessedPixelSprite>>;
-  heldWeapons: Partial<Record<WeaponType, ProcessedPixelSprite>>;
   backgrounds: Partial<Record<StageTheme, HTMLCanvasElement>>;
   backgroundsAlt: Partial<Record<StageTheme, HTMLCanvasElement>>;
   bonusCourtBg: HTMLCanvasElement | null;
@@ -54,10 +53,10 @@ export interface WorldAssets {
   errors: string[];
 }
 
-export const TITLE_BG_PATH = '/src/assets/images/title_bg_gore_chile_1795077238009.jpg';
-export const TITLE_LOGO_PATH = '/src/assets/images/logo_firmado_sangre_1795075246240.jpg';
+export const TITLE_BG_PATH = '/src/assets/images/title_bg_gore_chile_1795077238009.webp';
+export const TITLE_LOGO_PATH = '/src/assets/images/logo_firmado_sangre_1795075246240.webp';
 export const BONUS_COURT_BG_PATH = '/src/assets/images/bg_bonus_cancha_chile_1795125605513.jpg';
-export const CHAR_SELECT_BG_PATH = '/assets/aistudio/seleccion_personajes_2500757b.png';
+export const CHAR_SELECT_BG_PATH = '/assets/aistudio/seleccion_personajes_960.webp';
 export const HERO_PORTRAIT_PATHS = {
   bayron: '/assets/aistudio/BAYRON_FIRE_ac622317.png',
   marcianeke: '/assets/aistudio/MARCIANEKE_f29a32b8.png',
@@ -492,44 +491,9 @@ export const PICKUP_SPRITE_SPECS: Record<ItemType, SpriteAssetSpec> = {
     targetHeightPx: 30,
     extraHoleSeeds: [[0.502, 0.351]],
   },
-  tubo: {
-    src: '/src/assets/images/weapon_tubo_1795065771736.jpg',
-    targetHeightPx: 34,
-  },
-  bate: {
-    src: '/src/assets/images/weapon_bate_1795065771783.jpg',
-    targetHeightPx: 36,
-  },
-  botella: {
-    src: '/src/assets/images/weapon_botella_1795065772153.jpg',
-    targetHeightPx: 32,
-  },
-  fierro: {
-    src: '/src/assets/images/weapon_fierro_sprite.png',
-    targetHeightPx: 34,
-    preserveAlpha: true,
-  },
-};
-
-export const HELD_WEAPON_SPRITE_SPECS: Record<WeaponType, SpriteAssetSpec> = {
-  tubo: {
-    src: '/src/assets/images/weapon_tubo_sprite.png',
-    targetHeightPx: 22,
-    preserveAlpha: true,
-  },
-  bate: {
-    src: '/src/assets/images/weapon_bate_sprite.png',
-    targetHeightPx: 26,
-    preserveAlpha: true,
-  },
-  botella: {
-    src: '/src/assets/images/weapon_botella_sprite.png',
-    targetHeightPx: 24,
-    preserveAlpha: true,
-  },
-  fierro: {
-    src: '/src/assets/images/weapon_fierro_sprite.png',
-    targetHeightPx: 26,
+  pasesito: {
+    src: '/src/assets/images/powerup_dano_magenta.png',
+    targetHeightPx: 42,
     preserveAlpha: true,
   },
 };
@@ -1216,7 +1180,6 @@ export async function loadAllWorldAssets(): Promise<WorldAssets> {
   let boss5Frames: ProcessedPixelSprite[] = [];
   const breakables: Partial<Record<BreakableType, ProcessedPixelSprite>> = {};
   const pickups: Partial<Record<ItemType, ProcessedPixelSprite>> = {};
-  const heldWeapons: Partial<Record<WeaponType, ProcessedPixelSprite>> = {};
   const backgrounds: Partial<Record<StageTheme, HTMLCanvasElement>> = {};
   const backgroundsAlt: Partial<Record<StageTheme, HTMLCanvasElement>> = {};
   let bonusCourtBg: HTMLCanvasElement | null = null;
@@ -1228,7 +1191,6 @@ export async function loadAllWorldAssets(): Promise<WorldAssets> {
   const bossEntries = Object.entries(BOSS_SPRITE_SPECS) as [string, SpriteAssetSpec][];
   const breakableEntries = Object.entries(BREAKABLE_SPRITE_SPECS) as [BreakableType, SpriteAssetSpec][];
   const pickupEntries = Object.entries(PICKUP_SPRITE_SPECS) as [ItemType, SpriteAssetSpec][];
-  const heldWeaponEntries = Object.entries(HELD_WEAPON_SPRITE_SPECS) as [WeaponType, SpriteAssetSpec][];
   const bgEntries = Object.entries(STAGE_BG_PATHS) as [StageTheme, string][];
 
   await Promise.all([
@@ -1318,14 +1280,7 @@ export async function loadAllWorldAssets(): Promise<WorldAssets> {
         errors.push(err instanceof Error ? err.message : String(err));
       }
     }),
-    ...heldWeaponEntries.map(async ([weapon, spec]) => {
-      try {
-        const img = await loadImage(spec.src);
-        heldWeapons[weapon] = createProcessedSpriteFromImage(img, spec, 320);
-      } catch (err) {
-        errors.push(err instanceof Error ? err.message : String(err));
-      }
-    }),
+
     ...bgEntries.map(async ([theme, src]) => {
       try {
         const img = await loadImage(src);
@@ -1366,7 +1321,6 @@ export async function loadAllWorldAssets(): Promise<WorldAssets> {
     boss5Frames,
     breakables,
     pickups,
-    heldWeapons,
     backgrounds,
     backgroundsAlt,
     bonusCourtBg,

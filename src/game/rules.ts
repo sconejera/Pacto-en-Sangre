@@ -5,7 +5,7 @@ import {
   LEVEL_SCALING,
   WALK_MAX_Y,
   WALK_MIN_Y,
-  WEAPON_STATS,
+  POWERUP_STATS,
 } from './data';
 import type {
   AttackFrameData,
@@ -14,7 +14,7 @@ import type {
   CharacterId,
   EnemyEntity,
   EnemyType,
-  WeaponType,
+  PowerUpType,
   WaveSpawn,
 } from './types';
 
@@ -105,12 +105,10 @@ export function applySpecialCost(hp: number, hitCount: number): number {
 export function getPlayerAttackDamage(
   charId: CharacterId,
   comboStep: 1 | 2 | 3,
-  weapon: WeaponType | null
+  powerUp: PowerUpType | null
 ): number {
-  if (weapon) {
-    return WEAPON_STATS[weapon].damage;
-  }
-  return CHARACTERS[charId].comboDamage[comboStep - 1];
+  const baseDamage = CHARACTERS[charId].comboDamage[comboStep - 1];
+  return powerUp ? Math.round(baseDamage * POWERUP_STATS[powerUp].damageMultiplier) : baseDamage;
 }
 
 export function recordEnemyHitAndCheckKnockdown(
